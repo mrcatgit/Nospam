@@ -8,8 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FiberManualRecord
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -17,7 +22,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.nospam.recording.CallRecordingService
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,9 +48,33 @@ fun ConsoleScreen(vm: ConsoleViewModel) {
     val total by vm.total.collectAsState()
     val blocked by vm.blocked.collectAsState()
     val activeRules by vm.activeRules.collectAsState()
+    val recordings by vm.recordings.collectAsState()
+
+    val context = LocalContext.current
+    var recording by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("NoSpam · Console") }) }
+        topBar = { TopAppBar(title = { Text("NoSpam · Console") }) },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    if (recording) {
+                        CallRecordingService.stop(context)
+                    } else {
+                        // In chiamata, attiva il vivavoce per captare entrambe le voci.
+                        CallRecordingService.start(context, number = null)
+                    }
+                    recording = !recording
+                },
+                icon = {
+                    Icon(
+                        if (recording) Icons.Filled.Stop else Icons.Filled.FiberManualRecord,
+                        contentDescription = null,
+                    )
+                },
+                text = { Text(if (recording) "Ferma" else "Registra") },
+            )
+        },
     ) { pad ->
         Column(
             Modifier.fillMaxSize().padding(pad).padding(16.dp),
@@ -50,6 +84,7 @@ fun ConsoleScreen(vm: ConsoleViewModel) {
                 StatCard("Totali", total.toString(), Modifier.weight(1f))
                 StatCard("Bloccate", blocked.toString(), Modifier.weight(1f))
                 StatCard("Regole", activeRules.toString(), Modifier.weight(1f))
+                StatCard("Reg.", recordings.size.toString(), Modifier.weight(1f))
             }
             Text("Eventi recenti", style = MaterialTheme.typography.titleMedium)
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {

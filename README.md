@@ -23,11 +23,12 @@ eventi e genera un **fascicolo di segnalazione/denuncia** pronto da consegnare a
 | **Motore di rilevamento** | Euristiche su numero/prefisso/pattern + blocklist locale e liste community importabili. |
 | **Registro forense** | Ogni evento è firmato con hash concatenato (catena tipo blockchain leggera) → manomissioni rilevabili. |
 | **Console di comando** | Dashboard Compose: statistiche, timeline, gestione regole, esportazioni. |
+| **Registrazione chiamata** | Registra (dal microfono, in vivavoce) le chiamate a cui partecipi; file sigillato con SHA-256. Vedi [`docs/REGISTRAZIONE.md`](docs/REGISTRAZIONE.md). |
 | **Generatore denuncia** | Produce un fascicolo strutturato (PDF/JSON) con i dati richiesti da Polizia Postale / AGCOM. |
 
 ## Cosa NON fa (per scelta e per legge)
 
-- ❌ Non registra né intercetta il **contenuto** delle chiamate (vietato da Android 10+ e, verso terzi inconsapevoli, dall'art. 617 c.p.).
+- ❌ Non intercetta comunicazioni **tra terzi** né accede al flusso audio della telefonata (precluso alle app di terze parti da Android 10+; la captazione di comunicazioni altrui è vietata dall'art. 617 c.p.). *La registrazione delle chiamate a cui partecipi tu è invece supportata e lecita — vedi sopra.*
 - ❌ Non effettua "contrattacchi", flooding, o accessi a sistemi dei truffatori.
 - ❌ Non pretende di identificare la persona fisica dietro un numero: fornisce **metadati e prove**, l'identificazione legale spetta all'autorità.
 

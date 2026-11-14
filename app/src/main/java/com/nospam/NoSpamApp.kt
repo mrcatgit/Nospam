@@ -14,7 +14,11 @@ class NoSpamApp : Application() {
     val database: NoSpamDatabase by lazy { NoSpamDatabase.build(this) }
 
     val repository: CallRepository by lazy {
-        CallRepository(database.callRecordDao(), database.blockRuleDao())
+        CallRepository(
+            database.callRecordDao(),
+            database.blockRuleDao(),
+            database.callRecordingDao(),
+        )
     }
 
     val detector: SpamDetector by lazy { SpamDetector(repository) }

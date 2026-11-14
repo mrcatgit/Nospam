@@ -26,8 +26,15 @@ export, console) ci sono; di seguito l'evoluzione prevista.
 - [ ] Marca temporale esterna opzionale (timestamp RFC 3161) per il sigillo del bundle.
 - [ ] Esportazione firmata con chiave del dispositivo (Android Keystore).
 
+## Registrazione (implementata, da rifinire)
+- [x] Registrazione dal microfono (vivavoce) con foreground service e notifica.
+- [x] Sigillo SHA-256 del file e inclusione nel fascicolo prove.
+- [ ] Avvio registrazione con numero collegato all'evento in corso.
+- [ ] Riproduzione/condivisione dei file dalla console (via FileProvider).
+- [ ] Rilevamento automatico stato chiamata (CALL_STATE) per proporre la registrazione.
+
 ## Non in programma (fuori ambito per legge/etica)
-- Registrazione/intercettazione di conversazioni.
+- Intercettazione di comunicazioni **tra terzi** / accesso al flusso audio di rete.
 - Qualsiasi azione offensiva verso i chiamanti.
 - Tentativi di de-anonimizzazione dell'intestatario.
 

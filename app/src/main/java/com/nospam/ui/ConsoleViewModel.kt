@@ -30,15 +30,19 @@ class ConsoleViewModel(private val repo: CallRepository) : ViewModel() {
         repo.blockedCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     val activeRules: StateFlow<Int> =
         repo.activeRuleCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    val recordings: StateFlow<List<com.nospam.data.model.CallRecording>> =
+        repo.observeRecordings().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun addRule(rule: BlockRule) = viewModelScope.launch { repo.addRule(rule) }
     fun deleteRule(rule: BlockRule) = viewModelScope.launch { repo.deleteRule(rule) }
 
     suspend fun buildEvidenceJson(): String =
-        EvidenceExporter.toJson(EvidenceExporter.buildBundle(repo.allOrdered()))
+        EvidenceExporter.toJson(
+            EvidenceExporter.buildBundle(repo.allOrdered(), repo.allRecordings())
+        )
 
     suspend fun buildComplaintText(): String =
-        ComplaintReport().build(repo.allOrdered())
+        ComplaintReport().build(repo.allOrdered(), repo.allRecordings())
 
     suspend fun verifyIntegrity(): EvidenceHasher.ChainResult = repo.verifyIntegrity()
 

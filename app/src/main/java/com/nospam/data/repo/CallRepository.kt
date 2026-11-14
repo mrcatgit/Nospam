@@ -2,8 +2,10 @@ package com.nospam.data.repo
 
 import com.nospam.data.db.BlockRuleDao
 import com.nospam.data.db.CallRecordDao
+import com.nospam.data.db.CallRecordingDao
 import com.nospam.data.model.BlockRule
 import com.nospam.data.model.CallRecord
+import com.nospam.data.model.CallRecording
 import com.nospam.data.model.Verdict
 import com.nospam.forensic.EvidenceHasher
 import kotlinx.coroutines.flow.Flow
@@ -16,9 +18,15 @@ import kotlinx.coroutines.flow.Flow
 class CallRepository(
     private val callDao: CallRecordDao,
     private val ruleDao: BlockRuleDao,
+    private val recordingDao: CallRecordingDao,
 ) {
 
     fun observeCalls(): Flow<List<CallRecord>> = callDao.observeAll()
+    fun observeRecordings(): Flow<List<CallRecording>> = recordingDao.observeAll()
+
+    suspend fun addRecording(recording: CallRecording): Long = recordingDao.insert(recording)
+    suspend fun deleteRecording(recording: CallRecording) = recordingDao.delete(recording)
+    suspend fun allRecordings(): List<CallRecording> = recordingDao.allOrdered()
     fun observeRules(): Flow<List<BlockRule>> = ruleDao.observeAll()
     fun totalCalls(): Flow<Int> = callDao.total()
     fun blockedCount(): Flow<Int> = callDao.countByVerdict(Verdict.BLOCKED)
