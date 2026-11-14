@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Scudo con cornetta sbarrata: difesa dalle chiamate -->
+    <path
+        android:fillColor="#4CD9A0"
+        android:pathData="M54,28 L74,36 L74,56 C74,68 65,76 54,80 C43,76 34,68 34,56 L34,36 Z" />
+    <path
+        android:fillColor="#0B3D2E"
+        android:pathData="M45,48 a4,4 0 0,1 4,-4 l3,0 2,6 -3,3 c1,3 3,5 6,6 l3,-3 6,2 0,3 a4,4 0 0,1 -4,4 C54,65 45,58 45,48 Z" />
+    <path
+        android:strokeColor="#FF5A5A"
+        android:strokeWidth="4"
+        android:pathData="M40,42 L70,70" />
+</vector>
