@@ -10,11 +10,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FiberManualRecord
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -24,10 +26,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.nospam.recording.CallRecordingService
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,10 +55,29 @@ fun ConsoleScreen(vm: ConsoleViewModel) {
     val recordings by vm.recordings.collectAsState()
 
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var recording by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("NoSpam · Console") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("NoSpam · Console") },
+                actions = {
+                    IconButton(onClick = {
+                        scope.launch {
+                            EvidenceShare.share(
+                                context = context,
+                                esposto = vm.buildComplaintText(),
+                                evidenceJson = vm.buildEvidenceJson(),
+                                audioPaths = vm.recordings.value.map { it.filePath },
+                            )
+                        }
+                    }) {
+                        Icon(Icons.Filled.Share, contentDescription = "Condividi fascicolo")
+                    }
+                },
+            )
+        },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {

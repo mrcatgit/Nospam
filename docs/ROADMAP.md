@@ -9,8 +9,8 @@ export, console) ci sono; di seguito l'evoluzione prevista.
 - [ ] **Lettura durate dal call log di sistema** (`READ_CALL_LOG`) per alimentare
       l'euristica `avgPrevDurationSec`.
 - [ ] **Schermata Regole**: creazione/modifica/eliminazione BlockRule dalla console.
-- [ ] **Export reale su file**: condivisione del JSON e del PDF via `FileProvider` +
-      `ACTION_SEND` (export testuale già pronto nel ViewModel).
+- [x] **Export e condivisione reale**: esposto (.txt) + evidence bundle (.json) + file
+      audio condivisi via `FileProvider` + `ACTION_SEND_MULTIPLE` (pulsante in console).
 - [ ] **PDF** del fascicolo (oltre al testo) con `PdfDocument`.
 
 ## Community & liste
@@ -29,9 +29,11 @@ export, console) ci sono; di seguito l'evoluzione prevista.
 ## Registrazione (implementata, da rifinire)
 - [x] Registrazione dal microfono (vivavoce) con foreground service e notifica.
 - [x] Sigillo SHA-256 del file e inclusione nel fascicolo prove.
-- [ ] Avvio registrazione con numero collegato all'evento in corso.
-- [ ] Riproduzione/condivisione dei file dalla console (via FileProvider).
-- [ ] Rilevamento automatico stato chiamata (CALL_STATE) per proporre la registrazione.
+- [x] Proposta automatica di registrazione per chiamate sospette non bloccate
+      (notifica con azione dallo screening; avvio sempre su tocco dell'utente).
+- [x] Condivisione dei file audio nel fascicolo (via FileProvider).
+- [ ] Avvio registrazione con numero già collegato all'evento in corso del registro.
+- [ ] Riproduzione in-app dei file dalla console.
 
 ## Non in programma (fuori ambito per legge/etica)
 - Intercettazione di comunicazioni **tra terzi** / accesso al flusso audio di rete.
