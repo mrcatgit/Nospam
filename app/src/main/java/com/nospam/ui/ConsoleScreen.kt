@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
@@ -47,7 +48,7 @@ import java.util.Locale
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConsoleScreen(vm: ConsoleViewModel) {
+fun ConsoleScreen(vm: ConsoleViewModel, onOpenRules: () -> Unit = {}) {
     val calls by vm.calls.collectAsState()
     val total by vm.total.collectAsState()
     val blocked by vm.blocked.collectAsState()
@@ -63,6 +64,9 @@ fun ConsoleScreen(vm: ConsoleViewModel) {
             TopAppBar(
                 title = { Text("NoSpam · Console") },
                 actions = {
+                    IconButton(onClick = onOpenRules) {
+                        Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = "Regole")
+                    }
                     IconButton(onClick = {
                         scope.launch {
                             EvidenceShare.share(

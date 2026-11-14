@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         requestRuntimePermissions()
         setContent {
             MaterialTheme {
-                Surface { ConsoleScreen(vm) }
+                Surface { NavRoot(vm) }
             }
         }
     }

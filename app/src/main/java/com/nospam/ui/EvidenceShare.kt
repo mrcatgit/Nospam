@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
+import com.nospam.report.ComplaintPdfGenerator
 import java.io.File
 
 /**
@@ -31,9 +32,11 @@ object EvidenceShare {
         val dir = File(context.cacheDir, "export").apply { if (!exists()) mkdirs() }
         val txt = File(dir, "esposto_nospam.txt").apply { writeText(esposto) }
         val json = File(dir, "evidence_bundle.json").apply { writeText(evidenceJson) }
+        val pdf = runCatching { ComplaintPdfGenerator().render(esposto, dir) }.getOrNull()
 
         val uris = ArrayList<Uri>()
         uris += FileProvider.getUriForFile(context, AUTHORITY, txt)
+        if (pdf != null) uris += FileProvider.getUriForFile(context, AUTHORITY, pdf)
         uris += FileProvider.getUriForFile(context, AUTHORITY, json)
         audioPaths.forEach { path ->
             val f = File(path)

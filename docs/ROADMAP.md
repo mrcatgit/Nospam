@@ -8,10 +8,10 @@ export, console) ci sono; di seguito l'evoluzione prevista.
       automatica dei contatti noti.
 - [ ] **Lettura durate dal call log di sistema** (`READ_CALL_LOG`) per alimentare
       l'euristica `avgPrevDurationSec`.
-- [ ] **Schermata Regole**: creazione/modifica/eliminazione BlockRule dalla console.
+- [x] **Schermata Regole**: creazione/eliminazione BlockRule dalla console.
 - [x] **Export e condivisione reale**: esposto (.txt) + evidence bundle (.json) + file
       audio condivisi via `FileProvider` + `ACTION_SEND_MULTIPLE` (pulsante in console).
-- [ ] **PDF** del fascicolo (oltre al testo) con `PdfDocument`.
+- [x] **PDF** del fascicolo (oltre al testo) con `PdfDocument`, incluso nella condivisione.
 
 ## Community & liste
 - [ ] Import/aggiornamento blocklist community in formato standard (CSV/JSON) con firma.
