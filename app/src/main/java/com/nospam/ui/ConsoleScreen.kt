@@ -8,8 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
@@ -59,13 +64,38 @@ fun ConsoleScreen(vm: ConsoleViewModel, onOpenRules: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var recording by remember { mutableStateOf(false) }
 
+    // Avvio registrazione protetto dal permesso microfono: senza permesso non si avvia
+    // (altrimenti startForeground con tipo microfono lancia SecurityException).
+    val micPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            CallRecordingService.start(context, null)
+            recording = true
+        }
+    }
+    fun toggleRecording() {
+        if (recording) {
+            CallRecordingService.stop(context)
+            recording = false
+        } else if (
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            CallRecordingService.start(context, null)
+            recording = true
+        } else {
+            micPermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("NoSpam · Console") },
                 actions = {
                     IconButton(onClick = onOpenRules) {
-                        Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = "Regole")
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Regole")
                     }
                     IconButton(onClick = {
                         scope.launch {
@@ -84,15 +114,8 @@ fun ConsoleScreen(vm: ConsoleViewModel, onOpenRules: () -> Unit = {}) {
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = {
-                    if (recording) {
-                        CallRecordingService.stop(context)
-                    } else {
-                        // In chiamata, attiva il vivavoce per captare entrambe le voci.
-                        CallRecordingService.start(context, number = null)
-                    }
-                    recording = !recording
-                },
+                // In chiamata, attiva il vivavoce per captare entrambe le voci.
+                onClick = { toggleRecording() },
                 icon = {
                     Icon(
                         if (recording) Icons.Filled.Stop else Icons.Filled.FiberManualRecord,

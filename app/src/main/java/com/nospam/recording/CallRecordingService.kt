@@ -14,7 +14,9 @@ import com.nospam.data.model.CallRecording
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Foreground service che mantiene attiva la registrazione mentre l'utente è in chiamata.
@@ -39,10 +41,15 @@ class CallRecordingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                number = intent.getStringExtra(EXTRA_NUMBER)
+                // Chiamiamo sempre startForeground (anche sul duplicato) per onorare
+                // l'obbligo FGS entro ~5s dopo startForegroundService.
                 startForegroundCompat()
-                if (!recorder.start()) {
-                    stopSelf()
+                if (recorder.isRecording) {
+                    // Duplicato di START mentre si registra già: ignora, non fermare il
+                    // servizio (altrimenti si perderebbe la registrazione in corso).
+                } else {
+                    number = intent.getStringExtra(EXTRA_NUMBER)
+                    if (!recorder.start()) stopForegroundAndSelf()
                 }
             }
             ACTION_STOP -> finishAndSave()
@@ -52,23 +59,36 @@ class CallRecordingService : Service() {
 
     private fun finishAndSave() {
         val result = recorder.stop()
-        if (result != null) {
-            val app = applicationContext as NoSpamApp
-            scope.launch {
-                app.repository.addRecording(
-                    CallRecording(
-                        number = number ?: "sconosciuto",
-                        e164Number = number,
-                        startedAt = result.startedAt,
-                        durationMs = result.durationMs,
-                        filePath = result.file.absolutePath,
-                        fileSha256 = result.sha256,
-                    )
-                )
-            }
+        if (result == null) {
+            stopForegroundAndSelf()
+            return
         }
+        val app = applicationContext as NoSpamApp
+        // Prima persisti la riga, POI ferma il servizio: così non si perde il record se
+        // il processo viene riciclato subito dopo stopSelf().
+        scope.launch {
+            app.repository.addRecording(
+                CallRecording(
+                    number = number ?: "sconosciuto",
+                    e164Number = number,
+                    startedAt = result.startedAt,
+                    durationMs = result.durationMs,
+                    filePath = result.file.absolutePath,
+                    fileSha256 = result.sha256,
+                )
+            )
+            withContext(Dispatchers.Main) { stopForegroundAndSelf() }
+        }
+    }
+
+    private fun stopForegroundAndSelf() {
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
     }
 
     private fun startForegroundCompat() {

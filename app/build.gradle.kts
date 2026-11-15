@@ -36,6 +36,12 @@ android {
     buildFeatures { compose = true }
 }
 
+// Esporta lo schema Room in app/schemas, così exportSchema=true è effettivo e le
+// migrazioni possono essere validate con androidx.room:room-testing.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.09.02")
     implementation(composeBom)

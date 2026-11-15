@@ -13,7 +13,7 @@ import com.nospam.data.model.CallRecording
 
 @Database(
     entities = [CallRecord::class, BlockRule::class, CallRecording::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -26,9 +26,10 @@ abstract class NoSpamDatabase : RoomDatabase() {
     companion object {
         /**
          * v1 → v2: aggiunge la tabella delle registrazioni audio.
-         * Lo statement rispecchia lo schema generato da Room (vedi schema JSON esportato
-         * in app/schemas): se si modificano i campi di [CallRecording], rigenerare e
-         * validare con un MigrationTest prima del rilascio.
+         * Gli statement rispecchiano lo schema generato da Room, esportato in
+         * app/schemas (abilitato da room.schemaLocation in app/build.gradle.kts): se si
+         * modificano i campi delle entità, rigenerare e validare con un MigrationTest
+         * (androidx.room:room-testing) prima del rilascio.
          */
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -47,13 +48,21 @@ abstract class NoSpamDatabase : RoomDatabase() {
             }
         }
 
+        /** v2 → v3: indici su call_records per lo screening (historyFor, topOffenders). */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_call_records_e164Number` ON `call_records` (`e164Number`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_call_records_timestamp` ON `call_records` (`timestamp`)")
+            }
+        }
+
         fun build(context: Context): NoSpamDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
                 NoSpamDatabase::class.java,
                 "nospam.db",
             )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
     }
 }

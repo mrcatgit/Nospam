@@ -3,6 +3,7 @@ package com.nospam.ui
 import android.Manifest
 import android.app.role.RoleManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -14,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import com.nospam.NoSpamApp
+import com.nospam.recording.CallRecordingService
 
 /**
  * Entry point. Richiede il ruolo di sistema "app ID chiamante & spam"
@@ -41,6 +43,32 @@ class MainActivity : ComponentActivity() {
                 Surface { NavRoot(vm) }
             }
         }
+        maybeStartRecording(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        maybeStartRecording(intent)
+    }
+
+    /**
+     * Avvia la registrazione quando l'app è aperta dall'azione "Registra" della notifica.
+     * L'avvio avviene qui, con l'Activity in primo piano, così il foreground service di
+     * tipo microfono è consentito anche su Android 14. Richiede il permesso microfono.
+     */
+    private fun maybeStartRecording(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_START_RECORDING, false) != true) return
+        intent.removeExtra(EXTRA_START_RECORDING)
+        val number = intent.getStringExtra(EXTRA_NUMBER)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            CallRecordingService.start(this, number)
+        } else {
+            // Senza permesso non si può registrare: chiedilo (l'utente potrà riprovare).
+            permissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
+        }
     }
 
     private fun requestCallScreeningRole() {
@@ -65,5 +93,10 @@ class MainActivity : ComponentActivity() {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
         if (needed.isNotEmpty()) permissionLauncher.launch(needed.toTypedArray())
+    }
+
+    companion object {
+        const val EXTRA_START_RECORDING = "com.nospam.START_RECORDING"
+        const val EXTRA_NUMBER = "com.nospam.NUMBER"
     }
 }

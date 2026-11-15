@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.nospam.ui.MainActivity
 
 /**
  * Propone all'utente di registrare una chiamata sospetta tramite una notifica con
@@ -22,12 +23,17 @@ object RecordingNotifier {
     fun offer(context: Context, number: String?) {
         createChannel(context)
 
-        val startIntent = Intent(context, CallRecordingService::class.java).apply {
-            action = CallRecordingService.ACTION_START
-            putExtra(CallRecordingService.EXTRA_NUMBER, number)
+        // Apre l'app in primo piano, che poi avvia la registrazione. NON si avvia qui un
+        // foreground service di tipo microfono: da Android 14 un FGS microfono NON può
+        // partire dal background (es. toccando un'azione di notifica) e lancerebbe
+        // ForegroundServiceStartNotAllowedException. In primo piano l'avvio è consentito.
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            putExtra(MainActivity.EXTRA_START_RECORDING, true)
+            putExtra(MainActivity.EXTRA_NUMBER, number)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        val pending = PendingIntent.getForegroundService(context, 0, startIntent, flags)
+        val pending = PendingIntent.getActivity(context, 0, openIntent, flags)
 
         val label = number ?: "numero sconosciuto"
         val notification = android.app.Notification.Builder(context, CHANNEL_ID)

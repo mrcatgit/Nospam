@@ -5,10 +5,12 @@ import android.telecom.CallScreeningService
 import com.nospam.NoSpamApp
 import com.nospam.data.model.CallRecord
 import com.nospam.data.model.Verdict
+import com.nospam.detection.ContactLookup
 import com.nospam.forensic.EvidenceHasher
 import com.nospam.recording.RecordingNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
@@ -33,9 +35,9 @@ class NoSpamScreeningService : CallScreeningService() {
         val app = applicationContext as NoSpamApp
 
         scope.launch {
-            // La rubrica viene consultata altrove (ContactLookup) se il permesso è dato;
-            // qui manteniamo il flusso semplice e privo di dipendenze dal contesto UI.
-            val knownContact = false
+            // Consulta la rubrica (se READ_CONTACTS è concesso): un contatto noto non
+            // deve essere bloccato/silenziato. Senza permesso, isKnown restituisce false.
+            val knownContact = ContactLookup.isKnown(applicationContext, raw)
             val decision = app.detector.evaluate(raw, knownContact)
 
             val response = CallResponse.Builder().apply {
@@ -78,5 +80,10 @@ class NoSpamScreeningService : CallScreeningService() {
                 )
             )
         }
+    }
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
     }
 }

@@ -102,8 +102,11 @@ object EvidenceExporter {
                 hash = it.hash,
             )
         }
+        // Il sigillo copre eventi E registrazioni, così l'intero fascicolo (hash dei file
+        // audio inclusi) è verificabile da terzi e non alterabile senza cambiare il seal.
         val eventsJson = json.encodeToString(events)
-        val seal = sha256(eventsJson)
+        val recordingsJson = json.encodeToString(exportedRecordings)
+        val seal = sha256("$eventsJson|$recordingsJson")
         return EvidenceBundle(
             generatedAtIso = iso.format(Date()),
             deviceTimeZone = TimeZone.getDefault().id,

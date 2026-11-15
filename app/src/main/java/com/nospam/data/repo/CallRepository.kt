@@ -9,6 +9,8 @@ import com.nospam.data.model.CallRecording
 import com.nospam.data.model.Verdict
 import com.nospam.forensic.EvidenceHasher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Unico punto di accesso ai dati. Garantisce che ogni [CallRecord] venga inserito
@@ -20,6 +22,10 @@ class CallRepository(
     private val ruleDao: BlockRuleDao,
     private val recordingDao: CallRecordingDao,
 ) {
+
+    // Serializza letture+scritture della catena di custodia: due chiamate screenate in
+    // parallelo non devono agganciarsi allo stesso predecessore (fork della catena).
+    private val chainMutex = Mutex()
 
     fun observeCalls(): Flow<List<CallRecord>> = callDao.observeAll()
     fun observeRecordings(): Flow<List<CallRecording>> = recordingDao.observeAll()
@@ -50,7 +56,7 @@ class CallRepository(
      * Il campo [CallRecord.hash] del record passato viene ignorato e ricalcolato qui,
      * per impedire che un chiamante possa falsare la catena.
      */
-    suspend fun recordCall(record: CallRecord): CallRecord {
+    suspend fun recordCall(record: CallRecord): CallRecord = chainMutex.withLock {
         val prev = callDao.latest()
         val prevHash = prev?.hash ?: EvidenceHasher.GENESIS
         val toStore = record.copy(
@@ -58,7 +64,7 @@ class CallRepository(
             hash = EvidenceHasher.hashRecord(record, prevHash),
         )
         val id = callDao.insert(toStore)
-        return toStore.copy(id = id)
+        toStore.copy(id = id)
     }
 
     /** Verifica l'integrità dell'intero registro. */
