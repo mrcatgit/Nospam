@@ -3,11 +3,11 @@ package com.nospam.screening
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import com.nospam.NoSpamApp
+import com.nospam.data.AppSettings
 import com.nospam.data.model.CallRecord
 import com.nospam.data.model.Verdict
+import com.nospam.detection.ContactLookup
 import com.nospam.forensic.EvidenceHasher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
@@ -25,16 +25,16 @@ import kotlinx.coroutines.launch
  */
 class NoSpamScreeningService : CallScreeningService() {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     override fun onScreenCall(callDetails: Call.Details) {
         val raw = callDetails.handle?.schemeSpecificPart
         val app = applicationContext as NoSpamApp
 
-        scope.launch {
-            // La rubrica viene consultata altrove (ContactLookup) se il permesso è dato;
-            // qui manteniamo il flusso semplice e privo di dipendenze dal contesto UI.
-            val knownContact = false
+        // Persistiamo sullo scope a vita-applicazione: Telecom può slegare e distruggere
+        // il service subito dopo respondToCall(), ma l'inserimento forense deve completare.
+        app.appScope.launch {
+            // Consulta la rubrica (se READ_CONTACTS è concesso): un contatto noto non
+            // deve essere bloccato/silenziato. Senza permesso, isKnown restituisce false.
+            val knownContact = ContactLookup.isKnown(applicationContext, raw)
             val decision = app.detector.evaluate(raw, knownContact)
 
             val response = CallResponse.Builder().apply {
@@ -53,6 +53,30 @@ class NoSpamScreeningService : CallScreeningService() {
             }.build()
 
             respondToCall(callDetails, response)
+
+            // Avvisa l'utente dell'esito al momento della chiamata. Le chiamate consentite
+            // seguono le impostazioni (avviso per tutte / solo sconosciuti).
+            val settings = AppSettings(applicationContext)
+            val number = decision.parsed.e164 ?: raw
+            val shouldAlert = when (decision.verdict) {
+                Verdict.BLOCKED, Verdict.SILENCED -> true
+                Verdict.ALLOWED ->
+                    settings.alertAllCalls && !(settings.alertOnlyUnknown && knownContact)
+            }
+            if (shouldAlert) {
+                if (settings.useOverlay && CallOverlay.canShow(applicationContext)) {
+                    // Popup grande sopra la chiamata (richiede permesso overlay).
+                    CallOverlay.show(
+                        applicationContext, number, decision.verdict,
+                        decision.riskScore, decision.category, decision.reasons,
+                    )
+                } else {
+                    CallAlertNotifier.notify(
+                        applicationContext, number, decision.verdict,
+                        decision.riskScore, decision.category, knownContact,
+                    )
+                }
+            }
 
             // Registrazione nel registro forense (metadati, non contenuto)
             app.repository.recordCall(

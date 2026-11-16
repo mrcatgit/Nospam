@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- File audio delle registrazioni -->
+    <files-path name="recordings" path="recordings/" />
+    <!-- Esposto e fascicolo JSON generati per la condivisione -->
+    <cache-path name="export" path="export/" />
+</paths>

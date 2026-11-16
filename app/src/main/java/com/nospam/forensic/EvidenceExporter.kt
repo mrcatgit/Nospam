@@ -1,6 +1,7 @@
 package com.nospam.forensic
 
 import com.nospam.data.model.CallRecord
+import com.nospam.data.model.CallRecording
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -38,9 +39,20 @@ object EvidenceExporter {
     )
 
     @Serializable
+    data class ExportedRecording(
+        val startedAtIso: String,
+        val number: String,
+        val e164Number: String?,
+        val durationMs: Long,
+        val fileName: String,
+        val fileSha256: String,
+        val note: String?,
+    )
+
+    @Serializable
     data class EvidenceBundle(
         val tool: String = "NoSpam",
-        val formatVersion: Int = 1,
+        val formatVersion: Int = 2,
         val generatedAtIso: String,
         val deviceTimeZone: String,
         val integrityValid: Boolean,
@@ -48,6 +60,8 @@ object EvidenceExporter {
         val integrityBrokenAtId: Long?,
         val eventCount: Int,
         val events: List<ExportedEvent>,
+        val recordingCount: Int = 0,
+        val recordings: List<ExportedRecording> = emptyList(),
         /** Hash SHA-256 dell'intero elenco eventi serializzato (sigillo del fascicolo). */
         val bundleSeal: String,
     )
@@ -56,8 +70,22 @@ object EvidenceExporter {
         timeZone = TimeZone.getDefault()
     }
 
-    fun buildBundle(records: List<CallRecord>): EvidenceBundle {
+    fun buildBundle(
+        records: List<CallRecord>,
+        recordings: List<CallRecording> = emptyList(),
+    ): EvidenceBundle {
         val chain = EvidenceHasher.verifyChain(records)
+        val exportedRecordings = recordings.map {
+            ExportedRecording(
+                startedAtIso = iso.format(Date(it.startedAt)),
+                number = it.number,
+                e164Number = it.e164Number,
+                durationMs = it.durationMs,
+                fileName = it.filePath.substringAfterLast('/'),
+                fileSha256 = it.fileSha256,
+                note = it.note,
+            )
+        }
         val events = records.map {
             ExportedEvent(
                 timestampIso = iso.format(Date(it.timestamp)),
@@ -74,8 +102,11 @@ object EvidenceExporter {
                 hash = it.hash,
             )
         }
+        // Il sigillo copre eventi E registrazioni, così l'intero fascicolo (hash dei file
+        // audio inclusi) è verificabile da terzi e non alterabile senza cambiare il seal.
         val eventsJson = json.encodeToString(events)
-        val seal = sha256(eventsJson)
+        val recordingsJson = json.encodeToString(exportedRecordings)
+        val seal = sha256("$eventsJson|$recordingsJson")
         return EvidenceBundle(
             generatedAtIso = iso.format(Date()),
             deviceTimeZone = TimeZone.getDefault().id,
@@ -84,6 +115,8 @@ object EvidenceExporter {
             integrityBrokenAtId = chain.brokenAtId,
             eventCount = events.size,
             events = events,
+            recordingCount = exportedRecordings.size,
+            recordings = exportedRecordings,
             bundleSeal = seal,
         )
     }

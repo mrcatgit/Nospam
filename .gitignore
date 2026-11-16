@@ -14,3 +14,6 @@
 app/build/
 /export/
 /evidence_exports/
+
+# Kotlin incremental compiler session files
+.kotlin/

@@ -2,7 +2,6 @@ package com.nospam.detection
 
 import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
-import com.google.i18n.phonenumbers.geocoding.PhoneNumberOfflineGeocoder
 import java.util.Locale
 
 /**
@@ -13,7 +12,6 @@ import java.util.Locale
 class NumberNormalizer(private val defaultRegion: String = "IT") {
 
     private val util = PhoneNumberUtil.getInstance()
-    private val geocoder = PhoneNumberOfflineGeocoder.getInstance()
 
     data class Parsed(
         val e164: String?,
@@ -31,11 +29,15 @@ class NumberNormalizer(private val defaultRegion: String = "IT") {
             val proto = util.parse(raw, defaultRegion)
             val valid = util.isValidNumber(proto)
             val e164 = if (valid) util.format(proto, PhoneNumberUtil.PhoneNumberFormat.E164) else null
-            val desc = geocoder.getDescriptionForNumber(proto, Locale.ITALIAN).ifBlank { null }
+            val region = util.getRegionCodeForNumber(proto)
+            // Descrizione dell'area dal codice regione (es. IT -> "Italia"). Evitiamo il
+            // geocoder di libphonenumber, che vive in un artefatto separato e pesante.
+            val desc = region?.let { Locale("", it).getDisplayCountry(Locale.ITALIAN) }
+                ?.ifBlank { null }
             Parsed(
                 e164 = e164,
                 valid = valid,
-                region = util.getRegionCodeForNumber(proto),
+                region = region,
                 description = desc,
                 lineType = util.getNumberType(proto).name,
             )

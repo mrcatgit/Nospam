@@ -1,18 +1,24 @@
 package com.nospam.ui
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.nospam.data.model.BlockRule
 import com.nospam.data.model.CallRecord
+import com.nospam.data.model.CallRecording
 import com.nospam.data.repo.CallRepository
+import java.io.File
 import com.nospam.forensic.EvidenceExporter
 import com.nospam.forensic.EvidenceHasher
 import com.nospam.report.ComplaintReport
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Stato e azioni della console. Espone i flussi reattivi del registro e delle regole,
@@ -30,15 +36,30 @@ class ConsoleViewModel(private val repo: CallRepository) : ViewModel() {
         repo.blockedCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     val activeRules: StateFlow<Int> =
         repo.activeRuleCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    val recordings: StateFlow<List<CallRecording>> =
+        repo.observeRecordings().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun addRule(rule: BlockRule) = viewModelScope.launch { repo.addRule(rule) }
     fun deleteRule(rule: BlockRule) = viewModelScope.launch { repo.deleteRule(rule) }
 
-    suspend fun buildEvidenceJson(): String =
-        EvidenceExporter.toJson(EvidenceExporter.buildBundle(repo.allOrdered()))
+    /** Elimina una registrazione: prima il file audio, poi la riga nel registro. */
+    fun deleteRecording(rec: CallRecording) = viewModelScope.launch {
+        runCatching { File(rec.filePath).delete() }
+        repo.deleteRecording(rec)
+    }
 
-    suspend fun buildComplaintText(): String =
-        ComplaintReport().build(repo.allOrdered())
+    /**
+     * Prepara il fascicolo da condividere da UN SOLO snapshot del database (eventi +
+     * registrazioni), così esposto, JSON e audio allegati restano coerenti tra loro.
+     * Gira interamente su Dispatchers.IO (lettura DB, scrittura file, rendering PDF).
+     */
+    suspend fun buildShareUris(context: Context): ArrayList<Uri> = withContext(Dispatchers.IO) {
+        val calls = repo.allOrdered()
+        val recs = repo.allRecordings()
+        val esposto = ComplaintReport().build(calls, recs)
+        val json = EvidenceExporter.toJson(EvidenceExporter.buildBundle(calls, recs))
+        EvidenceShare.buildShareUris(context, esposto, json, recs.map { it.filePath })
+    }
 
     suspend fun verifyIntegrity(): EvidenceHasher.ChainResult = repo.verifyIntegrity()
 

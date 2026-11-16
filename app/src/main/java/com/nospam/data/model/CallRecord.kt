@@ -1,6 +1,7 @@
 package com.nospam.data.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -11,7 +12,11 @@ import androidx.room.PrimaryKey
  * rilevabile (vedi [com.nospam.forensic.EvidenceHasher]). Questo rende il registro
  * utilizzabile come allegato credibile a una segnalazione/denuncia.
  */
-@Entity(tableName = "call_records")
+@Entity(
+    tableName = "call_records",
+    // Indici per le ricerche nel percorso critico dello screening (historyFor, topOffenders).
+    indices = [Index("e164Number"), Index("timestamp")],
+)
 data class CallRecord(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
 

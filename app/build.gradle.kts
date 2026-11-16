@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
 }
 
@@ -13,8 +14,8 @@ android {
         applicationId = "com.nospam"
         minSdk = 29          // Android 10: CallScreeningService pienamente supportato
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 9
+        versionName = "0.9.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -34,6 +35,15 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+
+    // Rende gli schemi Room esportati disponibili ai test di migrazione strumentati.
+    sourceSets["androidTest"].assets.srcDir("$projectDir/schemas")
+}
+
+// Esporta lo schema Room in app/schemas, così exportSchema=true è effettivo e le
+// migrazioni possono essere validate con androidx.room:room-testing.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -63,5 +73,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
 
     testImplementation("junit:junit:4.13.2")
+
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    // Validazione delle migrazioni Room (MigrationTestHelper)
+    androidTestImplementation("androidx.room:room-testing:2.6.1")
 }

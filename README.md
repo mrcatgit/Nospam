@@ -20,14 +20,16 @@ eventi e genera un **fascicolo di segnalazione/denuncia** pronto da consegnare a
 | Modulo | Funzione |
 |---|---|
 | **Screening chiamate** | `CallScreeningService` di sistema: blocca, silenzia o lascia passare in base alle regole. |
+| **Avviso al momento della chiamata** | Notifica heads-up con il verdetto (consentita / sospetta / spam bloccato), numero e rischio, con azione **Registra**. Configurabile da Impostazioni (per tutte le chiamate o solo sospette; solo numeri sconosciuti). Richiede il permesso Notifiche. |
 | **Motore di rilevamento** | Euristiche su numero/prefisso/pattern + blocklist locale e liste community importabili. |
 | **Registro forense** | Ogni evento è firmato con hash concatenato (catena tipo blockchain leggera) → manomissioni rilevabili. |
 | **Console di comando** | Dashboard Compose: statistiche, timeline, gestione regole, esportazioni. |
+| **Registrazione chiamata** | Registra (dal microfono, in vivavoce) le chiamate a cui partecipi; file sigillato con SHA-256. Vedi [`docs/REGISTRAZIONE.md`](docs/REGISTRAZIONE.md). |
 | **Generatore denuncia** | Produce un fascicolo strutturato (PDF/JSON) con i dati richiesti da Polizia Postale / AGCOM. |
 
 ## Cosa NON fa (per scelta e per legge)
 
-- ❌ Non registra né intercetta il **contenuto** delle chiamate (vietato da Android 10+ e, verso terzi inconsapevoli, dall'art. 617 c.p.).
+- ❌ Non intercetta comunicazioni **tra terzi** né accede al flusso audio della telefonata (precluso alle app di terze parti da Android 10+; la captazione di comunicazioni altrui è vietata dall'art. 617 c.p.). *La registrazione delle chiamate a cui partecipi tu è invece supportata e lecita — vedi sopra.*
 - ❌ Non effettua "contrattacchi", flooding, o accessi a sistemi dei truffatori.
 - ❌ Non pretende di identificare la persona fisica dietro un numero: fornisce **metadati e prove**, l'identificazione legale spetta all'autorità.
 
@@ -65,18 +67,25 @@ Nospam/
 
 ## Build
 
-Il modo più semplice è **aprire la cartella in Android Studio**: scaricherà SDK e
-dipendenze e genererà il Gradle wrapper automaticamente.
-
-Da riga di comando, genera una volta il wrapper (serve una installazione di Gradle 8.5+)
-e poi compila:
+Il Gradle wrapper è incluso. Serve un Android SDK con platform `android-34` e
+build-tools `34.0.0` (Android Studio li installa da solo aprendo la cartella).
 
 ```bash
-gradle wrapper --gradle-version 8.9   # solo la prima volta
-./gradlew :app:assembleDebug
+./gradlew :app:assembleDebug        # APK di debug
+./gradlew :app:testDebugUnitTest    # test unitari (JVM)
 ```
 
-L'APK di debug finisce in `app/build/outputs/apk/debug/`.
+L'APK di debug finisce in `app/build/outputs/apk/debug/app-debug.apk`.
+
+### Test
+- **Unitari (JVM)**: `testDebugUnitTest` — catena di custodia (`EvidenceHasherTest`) e
+  serializzazione del fascicolo prove (`EvidenceExporterTest`).
+- **Strumentati (emulatore)**: `connectedDebugAndroidTest` — validazione delle migrazioni
+  Room (`MigrationTest`) contro gli schemi esportati in `app/schemas/`.
+
+### CI
+`.github/workflows/android.yml` compila l'APK ed esegue i test unitari a ogni push, più
+un job su emulatore per i test di migrazione.
 
 Per usare lo screening, al primo avvio l'app chiede di diventare la **app predefinita per
 l'ID chiamante & spam** (impostazione di sistema Android): è il meccanismo ufficiale e

@@ -1,6 +1,7 @@
 package com.nospam.report
 
 import com.nospam.data.model.CallRecord
+import com.nospam.data.model.CallRecording
 import com.nospam.data.model.Verdict
 import com.nospam.forensic.EvidenceHasher
 import java.text.SimpleDateFormat
@@ -24,7 +25,7 @@ class ComplaintReport(
 
     private val dateFmt = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.ITALY)
 
-    fun build(records: List<CallRecord>): String {
+    fun build(records: List<CallRecord>, recordings: List<CallRecording> = emptyList()): String {
         val chain = EvidenceHasher.verifyChain(records)
         val relevant = records.filter { it.category != com.nospam.data.model.SpamCategory.LEGITTIMO }
         val blocked = records.count { it.verdict == Verdict.BLOCKED }
@@ -88,7 +89,21 @@ class ComplaintReport(
         if (!chain.valid) sb.appendLine("   - Prima incongruenza al record id=${chain.brokenAtId}")
         sb.appendLine("   Il fascicolo JSON allegato consente a terzi di ri-verificare gli hash.")
         sb.appendLine()
-        sb.appendLine("7. RICHIESTA")
+        if (recordings.isNotEmpty()) {
+            sb.appendLine("7. REGISTRAZIONI AUDIO ALLEGATE")
+            sb.appendLine("   Registrazioni effettuate dal segnalante, parte della conversazione,")
+            sb.appendLine("   tramite microfono del proprio dispositivo. Ogni file è sigillato con")
+            sb.appendLine("   SHA-256 per dimostrarne l'integrità.")
+            recordings.sortedBy { it.startedAt }.forEach { r ->
+                val secs = r.durationMs / 1000
+                sb.appendLine("   - ${dateFmt.format(Date(r.startedAt))}  n. ${r.e164Number ?: r.number}")
+                sb.appendLine("       file=${r.filePath.substringAfterLast('/')}  durata=${secs}s")
+                sb.appendLine("       sha256=${r.fileSha256}")
+                if (!r.note.isNullOrBlank()) sb.appendLine("       nota: ${r.note}")
+            }
+            sb.appendLine()
+        }
+        sb.appendLine("8. RICHIESTA")
         sb.appendLine("   Si chiede all'Autorità di voler svolgere gli accertamenti di")
         sb.appendLine("   competenza, inclusa — ove ne ricorrano i presupposti — l'acquisizione")
         sb.appendLine("   dei dati di traffico presso i gestori telefonici al fine di")
@@ -97,7 +112,8 @@ class ComplaintReport(
         sb.appendLine("   Luogo e data: [LUOGO], ${SimpleDateFormat("dd/MM/yyyy", Locale.ITALY).format(Date())}")
         sb.appendLine("   Firma: _______________________")
         sb.appendLine()
-        sb.appendLine("Allegati: registro eventi in formato JSON firmato (NoSpam evidence bundle).")
+        sb.appendLine("Allegati: registro eventi in formato JSON firmato (NoSpam evidence bundle)" +
+            if (recordings.isNotEmpty()) " e ${recordings.size} file audio sigillati." else ".")
         return sb.toString()
     }
 }

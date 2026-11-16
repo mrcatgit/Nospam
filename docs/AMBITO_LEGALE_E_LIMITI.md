@@ -34,14 +34,29 @@ reati e si espone a denunce da parte degli stessi truffatori.
 | **Identificare la persona fisica dietro un numero** | Un privato non può ottenere l'intestatario di una SIM né i tabulati: lo fa solo l'autorità giudiziaria. App che promettono "chi ti ha chiamato" con nome e indirizzo o violano il GDPR o mentono. NoSpam fornisce i *metadati* necessari all'autorità per farlo legalmente. |
 | **Geolocalizzare il chiamante** | Non è tecnicamente possibile da un telefono di consumo e, se lo fosse, violerebbe la privacy. |
 
-## Nota sulla registrazione delle TUE chiamate
+## Registrazione delle TUE chiamate (funzione inclusa)
 
 In Italia puoi registrare una conversazione **a cui partecipi** e usarla come prova in
-giudizio (sei uno dei soggetti della comunicazione). NoSpam **non** include questa
-funzione perché dalla versione di Android 10 le API di registrazione delle chiamate sono
-precluse alle app di terze parti e aggirare quel blocco significherebbe tecniche fragili e
-contrarie alle policy. Se vuoi una prova audio, usa l'eventuale registratore integrato
-del tuo telefono o il vivavoce con un secondo dispositivo, consapevole dei limiti d'uso.
+giudizio: sei uno dei soggetti della comunicazione, quindi non è "intercettazione". Non è
+richiesto il consenso dell'altro interlocutore. NoSpam **include** questa funzione, con
+un limite tecnico importante e trasparente:
+
+- Da **Android 10** le app di terze parti **non possono** accedere al flusso audio della
+  telefonata (`AudioSource.VOICE_CALL` è riservato alle app di sistema).
+- NoSpam quindi registra **dal microfono**: con il **vivavoce** attivo può catturare
+  acusticamente entrambe le voci. La riuscita e la qualità dipendono dal dispositivo e
+  dall'ambiente; su alcuni telefoni, per le restrizioni Android, la registrazione può
+  risultare silenziosa. Verifica sempre sul tuo dispositivo (vedi `REGISTRAZIONE.md`).
+- La registrazione è **sempre avviata e fermata manualmente dall'utente**, con una
+  notifica persistente visibile per tutta la durata. Nessun avvio automatico o nascosto.
+- Ogni file audio è **sigillato con SHA-256** e incluso nel fascicolo prove.
+
+Questo NON è intercettazione: non capta comunicazioni fra terzi e non accede alla rete.
+Resta buona norma, dove il contesto lo richiede, avvisare l'interlocutore che la chiamata
+è registrata; per l'uso come prova in sede penale/civile da parte di chi partecipa alla
+conversazione, l'avviso non è un requisito di legge.
+
+Dettagli operativi: vedi [`REGISTRAZIONE.md`](REGISTRAZIONE.md).
 
 ## In sintesi
 
