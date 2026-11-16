@@ -62,6 +62,7 @@ class NoSpamScreeningService : CallScreeningService() {
                 decision.verdict,
                 decision.riskScore,
                 decision.category,
+                knownContact,
             )
 
             // Registrazione nel registro forense (metadati, non contenuto)

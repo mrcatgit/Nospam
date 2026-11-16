@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.nospam.data.AppSettings
 import com.nospam.data.model.SpamCategory
 import com.nospam.data.model.Verdict
 import com.nospam.ui.MainActivity
@@ -31,9 +32,15 @@ object CallAlertNotifier {
         verdict: Verdict,
         riskScore: Int,
         category: SpamCategory,
+        knownContact: Boolean,
     ) {
-        // Non disturbare per chiamate legittime a basso rischio.
-        if (verdict == Verdict.ALLOWED && riskScore < 40) return
+        // Bloccate e sospette avvisano sempre. Le consentite seguono le impostazioni:
+        // avviso per tutte le chiamate (default), opzionalmente solo per numeri sconosciuti.
+        if (verdict == Verdict.ALLOWED) {
+            val settings = AppSettings(context)
+            if (!settings.alertAllCalls) return
+            if (settings.alertOnlyUnknown && knownContact) return
+        }
 
         createChannel(context)
         val label = number ?: "numero sconosciuto"
@@ -41,7 +48,7 @@ object CallAlertNotifier {
         val title = when (verdict) {
             Verdict.BLOCKED -> "⛔ Chiamata spam bloccata"
             Verdict.SILENCED -> "🔕 Chiamata sospetta silenziata"
-            Verdict.ALLOWED -> "⚠️ Possibile spam/truffa"
+            Verdict.ALLOWED -> "✅ Chiamata consentita"
         }
 
         val builder = android.app.Notification.Builder(context, CHANNEL_ID)

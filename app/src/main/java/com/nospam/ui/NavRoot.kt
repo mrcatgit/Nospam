@@ -22,12 +22,14 @@ fun NavRoot(
             vm,
             onOpenRules = { screen = Screen.RULES },
             onOpenRecordings = { screen = Screen.RECORDINGS },
+            onOpenSettings = { screen = Screen.SETTINGS },
             pendingRecordNumber = pendingRecordNumber,
             onPendingRecordConsumed = onPendingRecordConsumed,
         )
         Screen.RULES -> RulesScreen(vm, onBack = { screen = Screen.CONSOLE })
         Screen.RECORDINGS -> RecordingsScreen(vm, onBack = { screen = Screen.CONSOLE })
+        Screen.SETTINGS -> SettingsScreen(onBack = { screen = Screen.CONSOLE })
     }
 }
 
-private enum class Screen { CONSOLE, RULES, RECORDINGS }
+private enum class Screen { CONSOLE, RULES, RECORDINGS, SETTINGS }

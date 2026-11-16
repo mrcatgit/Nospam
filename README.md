@@ -20,7 +20,7 @@ eventi e genera un **fascicolo di segnalazione/denuncia** pronto da consegnare a
 | Modulo | Funzione |
 |---|---|
 | **Screening chiamate** | `CallScreeningService` di sistema: blocca, silenzia o lascia passare in base alle regole. |
-| **Avviso al momento della chiamata** | Notifica heads-up con il verdetto (spam bloccato / sospetta / possibile truffa), numero e rischio. Richiede il permesso Notifiche. |
+| **Avviso al momento della chiamata** | Notifica heads-up con il verdetto (consentita / sospetta / spam bloccato), numero e rischio, con azione **Registra**. Configurabile da Impostazioni (per tutte le chiamate o solo sospette; solo numeri sconosciuti). Richiede il permesso Notifiche. |
 | **Motore di rilevamento** | Euristiche su numero/prefisso/pattern + blocklist locale e liste community importabili. |
 | **Registro forense** | Ogni evento è firmato con hash concatenato (catena tipo blockchain leggera) → manomissioni rilevabili. |
 | **Console di comando** | Dashboard Compose: statistiche, timeline, gestione regole, esportazioni. |

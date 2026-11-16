@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
@@ -60,6 +61,7 @@ fun ConsoleScreen(
     vm: ConsoleViewModel,
     onOpenRules: () -> Unit = {},
     onOpenRecordings: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     pendingRecordNumber: String? = null,
     onPendingRecordConsumed: () -> Unit = {},
 ) {
@@ -103,6 +105,9 @@ fun ConsoleScreen(
                     }
                     IconButton(onClick = onOpenRules) {
                         Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Regole")
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Filled.Settings, contentDescription = "Impostazioni")
                     }
                     IconButton(onClick = {
                         scope.launch {
