@@ -2,10 +2,12 @@ package com.nospam.ui
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,9 +50,15 @@ fun SettingsScreen(onBack: () -> Unit) {
     var onlyUnknown by remember { mutableStateOf(settings.alertOnlyUnknown) }
     var useOverlay by remember { mutableStateOf(settings.useOverlay) }
 
+    var phoneGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ANSWER_PHONE_CALLS) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+    }
     val phonePermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* esito gestito dal sistema */ }
+    ) { granted -> phoneGranted = granted }
 
     Scaffold(
         topBar = {
@@ -121,14 +129,24 @@ fun SettingsScreen(onBack: () -> Unit) {
                 ) { Text("Concedi permesso \"Mostra sopra altre app\"") }
             }
 
-            OutlinedButton(
-                onClick = { phonePermission.launch(Manifest.permission.ANSWER_PHONE_CALLS) },
-                modifier = Modifier.padding(top = 8.dp),
-            ) { Text("Abilita Rispondi/Riaggancia (permesso telefono)") }
+            if (phoneGranted) {
+                Text(
+                    "Permesso telefono: concesso ✓",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            } else {
+                OutlinedButton(
+                    onClick = { phonePermission.launch(Manifest.permission.ANSWER_PHONE_CALLS) },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) { Text("Abilita Rispondi/Riaggancia (permesso telefono)") }
+            }
 
             Text(
                 "Rispondere o riagganciare dal popup richiede il permesso telefono e può non " +
-                    "funzionare su tutti i modelli. Provalo sul tuo dispositivo.",
+                    "funzionare su tutti i modelli (il sistema può riservare questi comandi " +
+                    "all'app Telefono predefinita). Se non hanno effetto, il popup te lo segnala. " +
+                    "Provalo sul tuo dispositivo.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp),
             )

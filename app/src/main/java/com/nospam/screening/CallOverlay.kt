@@ -14,6 +14,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import com.nospam.NoSpamApp
 import com.nospam.R
 import com.nospam.data.model.SpamCategory
@@ -85,11 +86,8 @@ object CallOverlay {
         info.text = "Rischio $riskScore/100 · ${category.label}\n" + reasons.joinToString(" · ")
 
         record.setOnClickListener { onRecordClicked(appContext, number) }
-        answer.setOnClickListener { CallController.answer(appContext) }
-        hangup.setOnClickListener {
-            CallController.hangup(appContext)
-            removeInternal()
-        }
+        answer.setOnClickListener { onCallControl(appContext, answer = true) }
+        hangup.setOnClickListener { onCallControl(appContext, answer = false) }
         close.setOnClickListener { removeInternal() }
 
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -118,6 +116,23 @@ object CallOverlay {
 
         // Auto-chiusura dopo 60s per non lasciarlo appeso.
         autoDismiss = Runnable { removeInternal() }.also { main.postDelayed(it, 60_000) }
+    }
+
+    private fun onCallControl(appContext: Context, answer: Boolean) {
+        if (!CallController.canControlCalls(appContext)) {
+            toast(appContext, "Serve il permesso telefono: attivalo in NoSpam → Impostazioni")
+            return
+        }
+        val ok = if (answer) CallController.answer(appContext) else CallController.hangup(appContext)
+        if (ok) {
+            if (!answer) removeInternal()
+        } else {
+            toast(appContext, "Il tuo telefono non consente questo comando a NoSpam")
+        }
+    }
+
+    private fun toast(context: Context, msg: String) {
+        main.post { Toast.makeText(context, msg, Toast.LENGTH_LONG).show() }
     }
 
     private fun onRecordClicked(appContext: Context, number: String?) {
