@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/overlay_bg"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/overlay_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        tools:ignore="HardcodedText"
+        android:text="NoSpam" />
+
+    <TextView
+        android:id="@+id/overlay_number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textSize="18sp"
+        android:textColor="#E7EFE8"
+        android:text="" />
+
+    <TextView
+        android:id="@+id/overlay_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textSize="14sp"
+        android:textColor="#9DB0A4"
+        android:text="" />
+
+    <Button
+        android:id="@+id/overlay_record"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        tools:ignore="HardcodedText"
+        android:text="● Registra" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp"
+        android:weightSum="2">
+
+        <Button
+            android:id="@+id/overlay_answer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            tools:ignore="HardcodedText"
+            android:text="Rispondi" />
+
+        <Button
+            android:id="@+id/overlay_hangup"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            tools:ignore="HardcodedText"
+            android:text="Riaggancia" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/overlay_close"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:background="@android:color/transparent"
+        android:textColor="#9DB0A4"
+        tools:ignore="HardcodedText"
+        android:text="Chiudi" />
+
+</LinearLayout>

@@ -24,8 +24,18 @@ class AppSettings(context: Context) {
         get() = prefs.getBoolean(KEY_ONLY_UNKNOWN, false)
         set(value) = prefs.edit().putBoolean(KEY_ONLY_UNKNOWN, value).apply()
 
+    /**
+     * Se true (default), mostra un popup grande sopra la chiamata invece della notifica,
+     * quando il permesso "Mostra sopra altre app" è concesso. Senza permesso si usa
+     * comunque la notifica.
+     */
+    var useOverlay: Boolean
+        get() = prefs.getBoolean(KEY_USE_OVERLAY, true)
+        set(value) = prefs.edit().putBoolean(KEY_USE_OVERLAY, value).apply()
+
     companion object {
         private const val KEY_ALERT_ALL = "alert_all_calls"
         private const val KEY_ONLY_UNKNOWN = "alert_only_unknown"
+        private const val KEY_USE_OVERLAY = "use_overlay"
     }
 }

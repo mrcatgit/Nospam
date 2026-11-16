@@ -46,6 +46,22 @@ Cosa NON fare:
 - Non diffondere pubblicamente la registrazione: l'uso è per **difesa e denuncia**, non
   per pubblicazione. La diffusione può violare privacy e altre norme.
 
+## Popup sopra la chiamata (opzionale)
+
+Da **Impostazioni → "Mostra popup grande sopra la chiamata"** puoi avere, al posto della
+notifica, un riquadro ampio sopra la schermata di chiamata con numero, rischio e
+motivazioni, e i pulsanti grandi:
+- **● Registra / ⏹ Ferma** (si alterna in base allo stato),
+- **Rispondi** e **Riaggancia**,
+- **Chiudi**.
+
+Richiede il permesso **"Mostra sopra altre app"** (c'è un pulsante in Impostazioni per
+concederlo). Senza il permesso si usa la notifica.
+
+**Rispondi/Riaggancia** richiedono il permesso **telefono** (`ANSWER_PHONE_CALLS`) e
+**dipendono dal dispositivo**: su alcuni modelli possono non avere effetto. Provalo sul
+tuo telefono.
+
 ## Riascoltare le registrazioni
 
 Nella console, tocca l'icona **Registrazioni** (in alto): apre l'elenco con, per ciascuna,

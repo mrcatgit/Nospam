@@ -118,10 +118,17 @@ class CallRecordingService : Service() {
             .addAction(Notification.Action.Builder(null, "Ferma", stopPending).build())
             .build()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIF_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-        } else {
-            startForeground(NOTIF_ID, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(NOTIF_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            } else {
+                startForeground(NOTIF_ID, notification)
+            }
+        } catch (e: Exception) {
+            // Es. ForegroundServiceStartNotAllowedException quando l'avvio parte dal
+            // background su Android 14 senza i requisiti: non andare in crash, termina.
+            _isRecording.value = false
+            stopSelf()
         }
     }
 

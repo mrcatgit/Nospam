@@ -1,5 +1,11 @@
 package com.nospam.ui
 
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,9 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -38,6 +46,11 @@ fun SettingsScreen(onBack: () -> Unit) {
 
     var alertAll by remember { mutableStateOf(settings.alertAllCalls) }
     var onlyUnknown by remember { mutableStateOf(settings.alertOnlyUnknown) }
+    var useOverlay by remember { mutableStateOf(settings.useOverlay) }
+
+    val phonePermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* esito gestito dal sistema */ }
 
     Scaffold(
         topBar = {
@@ -76,11 +89,48 @@ fun SettingsScreen(onBack: () -> Unit) {
 
             Text(
                 "Le chiamate bloccate e sospette generano sempre un avviso, a prescindere da " +
-                    "queste opzioni. L'avviso include il pulsante \"Registra\"; la " +
-                    "registrazione in corso si ferma dalla sua notifica (azione \"Ferma\") o dal " +
-                    "pulsante nella console.",
+                    "queste opzioni.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 12.dp),
+            )
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            Text("Popup sopra la chiamata", style = MaterialTheme.typography.titleMedium)
+
+            SettingRow(
+                title = "Mostra popup grande sopra la chiamata",
+                subtitle = "Invece della notifica, mostra un riquadro grande con numero, rischio " +
+                    "e i pulsanti Registra/Ferma, Rispondi e Riaggancia. Richiede il permesso " +
+                    "\"Mostra sopra altre app\". Senza permesso si usa la notifica.",
+                checked = useOverlay,
+                onCheckedChange = { useOverlay = it; settings.useOverlay = it },
+            )
+
+            val canOverlay = Settings.canDrawOverlays(context)
+            if (useOverlay && !canOverlay) {
+                OutlinedButton(
+                    onClick = {
+                        context.startActivity(
+                            Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:${context.packageName}"),
+                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    },
+                    modifier = Modifier.padding(top = 4.dp),
+                ) { Text("Concedi permesso \"Mostra sopra altre app\"") }
+            }
+
+            OutlinedButton(
+                onClick = { phonePermission.launch(Manifest.permission.ANSWER_PHONE_CALLS) },
+                modifier = Modifier.padding(top = 8.dp),
+            ) { Text("Abilita Rispondi/Riaggancia (permesso telefono)") }
+
+            Text(
+                "Rispondere o riagganciare dal popup richiede il permesso telefono e può non " +
+                    "funzionare su tutti i modelli. Provalo sul tuo dispositivo.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp),
             )
         }
     }

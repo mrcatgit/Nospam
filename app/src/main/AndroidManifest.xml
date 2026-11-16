@@ -20,6 +20,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
 
+    <!-- Popup sopra la schermata di chiamata (opzionale, l'utente concede il permesso). -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Rispondere/riagganciare dal popup (opzionale; dipende dal dispositivo). -->
+    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+
     <application
         android:name=".NoSpamApp"
         android:allowBackup="false"

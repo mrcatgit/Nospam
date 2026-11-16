@@ -3,6 +3,7 @@ package com.nospam.screening
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import com.nospam.NoSpamApp
+import com.nospam.data.AppSettings
 import com.nospam.data.model.CallRecord
 import com.nospam.data.model.Verdict
 import com.nospam.detection.ContactLookup
@@ -53,17 +54,29 @@ class NoSpamScreeningService : CallScreeningService() {
 
             respondToCall(callDetails, response)
 
-            // Avvisa l'utente dell'esito al momento della chiamata (notifica heads-up):
-            // spam bloccato, sospetta silenziata, o possibile spam che è passato. Per le
-            // non bloccate la notifica offre anche di registrare.
-            CallAlertNotifier.notify(
-                applicationContext,
-                decision.parsed.e164 ?: raw,
-                decision.verdict,
-                decision.riskScore,
-                decision.category,
-                knownContact,
-            )
+            // Avvisa l'utente dell'esito al momento della chiamata. Le chiamate consentite
+            // seguono le impostazioni (avviso per tutte / solo sconosciuti).
+            val settings = AppSettings(applicationContext)
+            val number = decision.parsed.e164 ?: raw
+            val shouldAlert = when (decision.verdict) {
+                Verdict.BLOCKED, Verdict.SILENCED -> true
+                Verdict.ALLOWED ->
+                    settings.alertAllCalls && !(settings.alertOnlyUnknown && knownContact)
+            }
+            if (shouldAlert) {
+                if (settings.useOverlay && CallOverlay.canShow(applicationContext)) {
+                    // Popup grande sopra la chiamata (richiede permesso overlay).
+                    CallOverlay.show(
+                        applicationContext, number, decision.verdict,
+                        decision.riskScore, decision.category, decision.reasons,
+                    )
+                } else {
+                    CallAlertNotifier.notify(
+                        applicationContext, number, decision.verdict,
+                        decision.riskScore, decision.category, knownContact,
+                    )
+                }
+            }
 
             // Registrazione nel registro forense (metadati, non contenuto)
             app.repository.recordCall(
