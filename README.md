@@ -66,18 +66,25 @@ Nospam/
 
 ## Build
 
-Il modo più semplice è **aprire la cartella in Android Studio**: scaricherà SDK e
-dipendenze e genererà il Gradle wrapper automaticamente.
-
-Da riga di comando, genera una volta il wrapper (serve una installazione di Gradle 8.5+)
-e poi compila:
+Il Gradle wrapper è incluso. Serve un Android SDK con platform `android-34` e
+build-tools `34.0.0` (Android Studio li installa da solo aprendo la cartella).
 
 ```bash
-gradle wrapper --gradle-version 8.9   # solo la prima volta
-./gradlew :app:assembleDebug
+./gradlew :app:assembleDebug        # APK di debug
+./gradlew :app:testDebugUnitTest    # test unitari (JVM)
 ```
 
-L'APK di debug finisce in `app/build/outputs/apk/debug/`.
+L'APK di debug finisce in `app/build/outputs/apk/debug/app-debug.apk`.
+
+### Test
+- **Unitari (JVM)**: `testDebugUnitTest` — catena di custodia (`EvidenceHasherTest`) e
+  serializzazione del fascicolo prove (`EvidenceExporterTest`).
+- **Strumentati (emulatore)**: `connectedDebugAndroidTest` — validazione delle migrazioni
+  Room (`MigrationTest`) contro gli schemi esportati in `app/schemas/`.
+
+### CI
+`.github/workflows/android.yml` compila l'APK ed esegue i test unitari a ogni push, più
+un job su emulatore per i test di migrazione.
 
 Per usare lo screening, al primo avvio l'app chiede di diventare la **app predefinita per
 l'ID chiamante & spam** (impostazione di sistema Android): è il meccanismo ufficiale e
