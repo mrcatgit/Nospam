@@ -8,6 +8,8 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -73,7 +75,11 @@ fun SettingsScreen(onBack: () -> Unit) {
         },
     ) { pad ->
         Column(
-            Modifier.fillMaxSize().padding(pad).padding(16.dp),
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(pad)
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text("Avvisi di chiamata", style = MaterialTheme.typography.titleMedium)
