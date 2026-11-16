@@ -7,7 +7,6 @@ import com.nospam.data.model.CallRecord
 import com.nospam.data.model.Verdict
 import com.nospam.detection.ContactLookup
 import com.nospam.forensic.EvidenceHasher
-import com.nospam.recording.RecordingNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -57,11 +56,16 @@ class NoSpamScreeningService : CallScreeningService() {
 
             respondToCall(callDetails, response)
 
-            // Se la chiamata non è bloccata ma è a rischio, proponi di registrarla.
-            // L'utente decide: la registrazione parte solo toccando la notifica.
-            if (decision.verdict != Verdict.BLOCKED && decision.riskScore >= 40) {
-                RecordingNotifier.offer(applicationContext, decision.parsed.e164 ?: raw)
-            }
+            // Avvisa l'utente dell'esito al momento della chiamata (notifica heads-up):
+            // spam bloccato, sospetta silenziata, o possibile spam che è passato. Per le
+            // non bloccate la notifica offre anche di registrare.
+            CallAlertNotifier.notify(
+                applicationContext,
+                decision.parsed.e164 ?: raw,
+                decision.verdict,
+                decision.riskScore,
+                decision.category,
+            )
 
             // Registrazione nel registro forense (metadati, non contenuto)
             app.repository.recordCall(
