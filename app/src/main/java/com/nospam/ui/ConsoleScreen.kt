@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.FiberManualRecord
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Card
@@ -53,7 +54,11 @@ import java.util.Locale
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConsoleScreen(vm: ConsoleViewModel, onOpenRules: () -> Unit = {}) {
+fun ConsoleScreen(
+    vm: ConsoleViewModel,
+    onOpenRules: () -> Unit = {},
+    onOpenRecordings: () -> Unit = {},
+) {
     val calls by vm.calls.collectAsState()
     val total by vm.total.collectAsState()
     val blocked by vm.blocked.collectAsState()
@@ -94,6 +99,9 @@ fun ConsoleScreen(vm: ConsoleViewModel, onOpenRules: () -> Unit = {}) {
             TopAppBar(
                 title = { Text("NoSpam · Console") },
                 actions = {
+                    IconButton(onClick = onOpenRecordings) {
+                        Icon(Icons.Filled.LibraryMusic, contentDescription = "Registrazioni")
+                    }
                     IconButton(onClick = onOpenRules) {
                         Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Regole")
                     }

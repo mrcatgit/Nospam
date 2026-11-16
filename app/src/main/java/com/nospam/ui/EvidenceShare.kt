@@ -59,4 +59,20 @@ object EvidenceShare {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
     }
+
+    /** Condivide un singolo file audio di registrazione. */
+    fun shareAudio(context: Context, path: String) {
+        val f = File(path)
+        if (!f.exists()) return
+        val uri = FileProvider.getUriForFile(context, AUTHORITY, f)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "audio/mp4"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(
+            Intent.createChooser(send, "Condividi registrazione")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
 }

@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.nospam.data.model.BlockRule
 import com.nospam.data.model.CallRecord
+import com.nospam.data.model.CallRecording
 import com.nospam.data.repo.CallRepository
+import java.io.File
 import com.nospam.forensic.EvidenceExporter
 import com.nospam.forensic.EvidenceHasher
 import com.nospam.report.ComplaintReport
@@ -30,11 +32,17 @@ class ConsoleViewModel(private val repo: CallRepository) : ViewModel() {
         repo.blockedCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     val activeRules: StateFlow<Int> =
         repo.activeRuleCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-    val recordings: StateFlow<List<com.nospam.data.model.CallRecording>> =
+    val recordings: StateFlow<List<CallRecording>> =
         repo.observeRecordings().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun addRule(rule: BlockRule) = viewModelScope.launch { repo.addRule(rule) }
     fun deleteRule(rule: BlockRule) = viewModelScope.launch { repo.deleteRule(rule) }
+
+    /** Elimina una registrazione: prima il file audio, poi la riga nel registro. */
+    fun deleteRecording(rec: CallRecording) = viewModelScope.launch {
+        runCatching { File(rec.filePath).delete() }
+        repo.deleteRecording(rec)
+    }
 
     suspend fun buildEvidenceJson(): String =
         EvidenceExporter.toJson(

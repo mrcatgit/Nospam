@@ -39,6 +39,14 @@ Cosa NON fare:
 - Non diffondere pubblicamente la registrazione: l'uso è per **difesa e denuncia**, non
   per pubblicazione. La diffusione può violare privacy e altre norme.
 
+## Riascoltare le registrazioni
+
+Nella console, tocca l'icona **Registrazioni** (in alto): apre l'elenco con, per ciascuna,
+numero, data, durata e l'inizio dell'hash. Da lì puoi:
+- **Riprodurre/fermare** l'audio in-app (play/stop);
+- **Condividere** il singolo file (es. inviarlo via email alla denuncia);
+- **Eliminare** la registrazione (con conferma: rimuove file e voce nel registro).
+
 ## Integrità della prova
 
 - Al termine della registrazione viene calcolato lo **SHA-256** del file.

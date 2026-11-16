@@ -32,8 +32,9 @@ export, console) ci sono; di seguito l'evoluzione prevista.
 - [x] Proposta automatica di registrazione per chiamate sospette non bloccate
       (notifica con azione dallo screening; avvio sempre su tocco dell'utente).
 - [x] Condivisione dei file audio nel fascicolo (via FileProvider).
+- [x] Riproduzione in-app dei file (schermata Registrazioni: play/stop, condivisione
+      del singolo file, eliminazione con conferma).
 - [ ] Avvio registrazione con numero già collegato all'evento in corso del registro.
-- [ ] Riproduzione in-app dei file dalla console.
 
 ## Non in programma (fuori ambito per legge/etica)
 - Intercettazione di comunicazioni **tra terzi** / accesso al flusso audio di rete.

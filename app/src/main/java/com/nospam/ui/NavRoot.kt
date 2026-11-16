@@ -14,9 +14,14 @@ import androidx.compose.runtime.setValue
 fun NavRoot(vm: ConsoleViewModel) {
     var screen by remember { mutableStateOf(Screen.CONSOLE) }
     when (screen) {
-        Screen.CONSOLE -> ConsoleScreen(vm, onOpenRules = { screen = Screen.RULES })
+        Screen.CONSOLE -> ConsoleScreen(
+            vm,
+            onOpenRules = { screen = Screen.RULES },
+            onOpenRecordings = { screen = Screen.RECORDINGS },
+        )
         Screen.RULES -> RulesScreen(vm, onBack = { screen = Screen.CONSOLE })
+        Screen.RECORDINGS -> RecordingsScreen(vm, onBack = { screen = Screen.CONSOLE })
     }
 }
 
-private enum class Screen { CONSOLE, RULES }
+private enum class Screen { CONSOLE, RULES, RECORDINGS }
