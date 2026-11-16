@@ -150,6 +150,41 @@ fun SettingsScreen(onBack: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp),
             )
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            Text("Permessi e informazioni", style = MaterialTheme.typography.titleMedium)
+
+            OutlinedButton(
+                onClick = {
+                    context.startActivity(
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:${context.packageName}"),
+                        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                },
+                modifier = Modifier.padding(top = 4.dp),
+            ) { Text("Apri le autorizzazioni dell'app (Android)") }
+
+            Text(
+                "Da lì abiliti: Telefono, Microfono, Notifiche, \"Mostra sopra altre app\" " +
+                    "e l'app ID chiamante/spam predefinita.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+
+            val versionLabel = remember {
+                runCatching {
+                    val pi = context.packageManager.getPackageInfo(context.packageName, 0)
+                    "NoSpam versione ${pi.versionName} (build ${pi.longVersionCode})"
+                }.getOrDefault("NoSpam")
+            }
+            Text(
+                versionLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 16.dp),
+            )
         }
     }
 }

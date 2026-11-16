@@ -14,8 +14,8 @@ android {
         applicationId = "com.nospam"
         minSdk = 29          // Android 10: CallScreeningService pienamente supportato
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 7
+        versionName = "0.7.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
