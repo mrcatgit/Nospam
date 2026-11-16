@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
     branches: ["**"]
 
@@ -28,6 +28,9 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Il default dell'azione include il pacchetto 'tools' (rimosso dall'SDK) e fallisce.
+          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
 
       - name: Build debug APK + run unit tests
         run: ./gradlew --no-daemon assembleDebug testDebugUnitTest
@@ -60,6 +63,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
 
       # L'emulatore ha bisogno dell'accelerazione KVM (disponibile sui runner Linux).
       - name: Enable KVM
