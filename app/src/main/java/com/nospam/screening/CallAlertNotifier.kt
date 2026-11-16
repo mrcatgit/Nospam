@@ -51,12 +51,21 @@ object CallAlertNotifier {
             Verdict.ALLOWED -> "✅ Chiamata consentita"
         }
 
+        val shield = "⚠️ Non dare MAI OTP, PIN, SPID, password o dati della carta a chi " +
+            "chiama. Nessuna banca o ente li chiede al telefono."
         val builder = android.app.Notification.Builder(context, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(detail)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentIntent(openApp(context, number, startRecording = false, requestCode = 0))
             .setAutoCancel(true)
+
+        // Scudo anti-truffa nella notifica espansa, per le chiamate non legittime.
+        if (verdict != Verdict.ALLOWED || riskScore >= 40) {
+            builder.setStyle(
+                android.app.Notification.BigTextStyle().bigText("$detail\n\n$shield")
+            )
+        }
 
         // Per le chiamate non bloccate offri anche di registrare (apre l'app in primo
         // piano, poi avvia: l'FGS microfono non può partire dal background su Android 14).

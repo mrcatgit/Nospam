@@ -45,7 +45,10 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nospam.data.model.BlockRule
 import com.nospam.data.model.CallRecord
+import com.nospam.data.model.RuleAction
+import com.nospam.data.model.RuleType
 import com.nospam.data.model.Verdict
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -146,7 +149,38 @@ fun ConsoleScreen(
             }
             Text("Eventi recenti", style = MaterialTheme.typography.titleMedium)
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(calls) { CallRow(it) }
+                items(calls) { rec ->
+                    CallRow(
+                        r = rec,
+                        onSearch = { WebLookup.search(context, rec.e164Number ?: rec.rawNumber) },
+                        onBlockNumber = {
+                            val v = rec.e164Number ?: rec.rawNumber
+                            if (v.isNotBlank()) {
+                                vm.addRule(
+                                    BlockRule(
+                                        type = RuleType.EXACT_NUMBER, value = v,
+                                        action = RuleAction.BLOCK, category = rec.category,
+                                        source = "manuale",
+                                    )
+                                )
+                                android.widget.Toast.makeText(context, "Numero bloccato", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onBlockSeries = rec.e164Number?.takeIf { it.length > 4 }?.let { e164 ->
+                            {
+                                val prefix = e164.dropLast(1)
+                                vm.addRule(
+                                    BlockRule(
+                                        type = RuleType.PREFIX, value = prefix,
+                                        action = RuleAction.BLOCK, category = rec.category,
+                                        source = "serie",
+                                    )
+                                )
+                                android.widget.Toast.makeText(context, "Serie bloccata: $prefix…", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        },
+                    )
+                }
             }
         }
     }
@@ -189,7 +223,12 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
 private val fmt = SimpleDateFormat("dd/MM HH:mm", Locale.ITALY)
 
 @Composable
-private fun CallRow(r: CallRecord) {
+private fun CallRow(
+    r: CallRecord,
+    onSearch: () -> Unit,
+    onBlockNumber: () -> Unit,
+    onBlockSeries: (() -> Unit)?,
+) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -201,6 +240,16 @@ private fun CallRow(r: CallRecord) {
             Text(r.reasons.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
             Text(r.hash.take(16) + "…", fontFamily = FontFamily.Monospace,
                 style = MaterialTheme.typography.labelSmall)
+            Row(
+                Modifier.fillMaxWidth().padding(top = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                TextButton(onClick = onSearch) { Text("Cerca online") }
+                TextButton(onClick = onBlockNumber) { Text("Blocca") }
+                if (onBlockSeries != null) {
+                    TextButton(onClick = onBlockSeries) { Text("Blocca serie") }
+                }
+            }
         }
     }
 }

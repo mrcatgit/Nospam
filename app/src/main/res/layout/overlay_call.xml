@@ -35,6 +35,20 @@
         android:textColor="#9DB0A4"
         android:text="" />
 
+    <!-- Scudo anti-truffa: sempre visibile, ricorda di non dare codici/dati. -->
+    <TextView
+        android:id="@+id/overlay_shield"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:padding="10dp"
+        android:background="#33FF5A5A"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="#FFB3B3"
+        tools:ignore="HardcodedText"
+        android:text="⚠️ Non dare MAI OTP, PIN, SPID, password o dati della carta a chi chiama. Nessuna banca o ente li chiede al telefono." />
+
     <Button
         android:id="@+id/overlay_record"
         android:layout_width="match_parent"
@@ -68,6 +82,14 @@
             tools:ignore="HardcodedText"
             android:text="Riaggancia" />
     </LinearLayout>
+
+    <Button
+        android:id="@+id/overlay_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        tools:ignore="HardcodedText"
+        android:text="🔎 Cerca questo numero online" />
 
     <Button
         android:id="@+id/overlay_close"

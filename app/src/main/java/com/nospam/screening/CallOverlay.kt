@@ -21,6 +21,7 @@ import com.nospam.data.model.SpamCategory
 import com.nospam.data.model.Verdict
 import com.nospam.recording.CallRecordingService
 import com.nospam.ui.MainActivity
+import com.nospam.ui.WebLookup
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -75,6 +76,7 @@ object CallOverlay {
         val record = v.findViewById<Button>(R.id.overlay_record)
         val answer = v.findViewById<Button>(R.id.overlay_answer)
         val hangup = v.findViewById<Button>(R.id.overlay_hangup)
+        val search = v.findViewById<Button>(R.id.overlay_search)
         val close = v.findViewById<Button>(R.id.overlay_close)
 
         title.text = when (verdict) {
@@ -88,6 +90,7 @@ object CallOverlay {
         record.setOnClickListener { onRecordClicked(appContext, number) }
         answer.setOnClickListener { onCallControl(appContext, answer = true) }
         hangup.setOnClickListener { onCallControl(appContext, answer = false) }
+        search.setOnClickListener { WebLookup.search(appContext, number) }
         close.setOnClickListener { removeInternal() }
 
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
