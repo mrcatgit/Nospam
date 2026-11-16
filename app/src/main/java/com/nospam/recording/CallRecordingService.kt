@@ -3,6 +3,7 @@ package com.nospam.recording
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -11,24 +12,25 @@ import android.os.Build
 import android.os.IBinder
 import com.nospam.NoSpamApp
 import com.nospam.data.model.CallRecording
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import com.nospam.forensic.FileHasher
+import com.nospam.ui.MainActivity
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Foreground service che mantiene attiva la registrazione mentre l'utente è in chiamata.
- * È avviato e fermato ESPLICITAMENTE dall'utente (nessun avvio automatico nascosto):
- * una notifica persistente segnala sempre che la registrazione è in corso.
+ * Avviato e fermato ESPLICITAMENTE dall'utente; una notifica persistente con azione
+ * "Ferma" segnala sempre che la registrazione è in corso.
  *
- * Avvio:  Intent action ACTION_START con extra EXTRA_NUMBER (opzionale)
- * Stop:   Intent action ACTION_STOP
+ * `onStartCommand` è serializzato sul thread principale, quindi START/STOP sono ordinati.
+ * I metadati vengono catturati in modo immutabile prima del salvataggio asincrono, e la
+ * persistenza gira sullo scope a vita-applicazione: così un'operazione successiva non può
+ * annullare un salvataggio in corso, e lo spegnimento del service non lo interrompe.
  */
 class CallRecordingService : Service() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var recorder: CallRecorder
     private var number: String? = null
 
@@ -41,15 +43,17 @@ class CallRecordingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                // Chiamiamo sempre startForeground (anche sul duplicato) per onorare
-                // l'obbligo FGS entro ~5s dopo startForegroundService.
+                // startForeground sempre (anche sul duplicato) per onorare l'obbligo FGS.
                 startForegroundCompat()
                 if (recorder.isRecording) {
-                    // Duplicato di START mentre si registra già: ignora, non fermare il
-                    // servizio (altrimenti si perderebbe la registrazione in corso).
+                    // Duplicato: una registrazione è già in corso, non fare nulla.
                 } else {
                     number = intent.getStringExtra(EXTRA_NUMBER)
-                    if (!recorder.start()) stopForegroundAndSelf()
+                    if (recorder.start()) {
+                        _isRecording.value = true
+                    } else {
+                        stopForegroundAndSelf()
+                    }
                 }
             }
             ACTION_STOP -> finishAndSave()
@@ -58,27 +62,29 @@ class CallRecordingService : Service() {
     }
 
     private fun finishAndSave() {
-        val result = recorder.stop()
-        if (result == null) {
+        val stopped = recorder.stop()
+        _isRecording.value = false
+        if (stopped == null) {
             stopForegroundAndSelf()
             return
         }
+        // Snapshot immutabile dei metadati prima del salvataggio asincrono.
+        val capturedNumber = number
         val app = applicationContext as NoSpamApp
-        // Prima persisti la riga, POI ferma il servizio: così non si perde il record se
-        // il processo viene riciclato subito dopo stopSelf().
-        scope.launch {
+        app.appScope.launch {
+            val sha = FileHasher.sha256(stopped.file) // intero file: fuori dal main thread
             app.repository.addRecording(
                 CallRecording(
-                    number = number ?: "sconosciuto",
-                    e164Number = number,
-                    startedAt = result.startedAt,
-                    durationMs = result.durationMs,
-                    filePath = result.file.absolutePath,
-                    fileSha256 = result.sha256,
+                    number = capturedNumber ?: "sconosciuto",
+                    e164Number = capturedNumber,
+                    startedAt = stopped.startedAt,
+                    durationMs = stopped.durationMs,
+                    filePath = stopped.file.absolutePath,
+                    fileSha256 = sha,
                 )
             )
-            withContext(Dispatchers.Main) { stopForegroundAndSelf() }
         }
+        stopForegroundAndSelf()
     }
 
     private fun stopForegroundAndSelf() {
@@ -87,16 +93,29 @@ class CallRecordingService : Service() {
     }
 
     override fun onDestroy() {
-        scope.cancel()
+        _isRecording.value = false
         super.onDestroy()
     }
 
     private fun startForegroundCompat() {
+        val stopPending = PendingIntent.getService(
+            this, 2,
+            Intent(this, CallRecordingService::class.java).setAction(ACTION_STOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val openApp = PendingIntent.getActivity(
+            this, 3,
+            Intent(this, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
         val notification: Notification = Notification.Builder(this, CHANNEL_ID)
             .setContentTitle("NoSpam · registrazione in corso")
-            .setContentText("Attiva il vivavoce per registrare entrambe le voci. Tocca per fermare.")
+            .setContentText("Attiva il vivavoce. Tocca \"Ferma\" per terminare.")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true)
+            .setContentIntent(openApp)
+            .addAction(Notification.Action.Builder(null, "Ferma", stopPending).build())
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -123,6 +142,10 @@ class CallRecordingService : Service() {
         const val EXTRA_NUMBER = "number"
         private const val CHANNEL_ID = "nospam_recording"
         private const val NOTIF_ID = 42
+
+        /** Stato di registrazione autorevole, osservabile dalla UI. */
+        private val _isRecording = MutableStateFlow(false)
+        val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
 
         fun start(context: Context, number: String?) {
             val i = Intent(context, CallRecordingService::class.java).apply {

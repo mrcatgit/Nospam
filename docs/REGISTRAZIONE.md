@@ -20,8 +20,15 @@ Da Android 10 le app di terze parti **non possono** accedere al flusso audio del
 telefonata: l'API `AudioSource.VOICE_CALL` è riservata alle app di sistema (e ai dialer
 di alcuni produttori). Non esiste un metodo di terze parti affidabile e conforme per
 captare direttamente l'audio di rete. NoSpam quindi registra ciò che arriva al
-**microfono**: in vivavoce questo include la voce dell'interlocutore riprodotta
+**microfono**: in vivavoce questo **può** includere la voce dell'interlocutore riprodotta
 dall'altoparlante.
+
+> ⚠️ **Non è garantito su tutti i telefoni.** Durante una chiamata cellulare, le
+> restrizioni Android sull'[input audio condiviso](https://developer.android.com/media/platform/sharing-audio-input)
+> possono far sì che un'app ordinaria riceva **silenzio** o non riesca ad avviare la
+> registrazione, anche in vivavoce. La riuscita dipende dal modello e dalla versione di
+> Android: **verifica sul tuo dispositivo** facendo una prova prima di affidarti alla
+> registrazione come prova, e riascolta subito il file per controllare che l'audio ci sia.
 
 Alternative se vuoi qualità migliore:
 - Usa il **registratore di chiamata integrato** nel dialer, se il tuo telefono lo offre

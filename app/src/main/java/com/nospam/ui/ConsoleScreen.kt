@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -58,6 +60,8 @@ fun ConsoleScreen(
     vm: ConsoleViewModel,
     onOpenRules: () -> Unit = {},
     onOpenRecordings: () -> Unit = {},
+    pendingRecordNumber: String? = null,
+    onPendingRecordConsumed: () -> Unit = {},
 ) {
     val calls by vm.calls.collectAsState()
     val total by vm.total.collectAsState()
@@ -67,31 +71,26 @@ fun ConsoleScreen(
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var recording by remember { mutableStateOf(false) }
+    // Stato di registrazione AUTOREVOLE: viene dal service, non da un flag locale.
+    val recording by CallRecordingService.isRecording.collectAsState()
 
     // Avvio registrazione protetto dal permesso microfono: senza permesso non si avvia
     // (altrimenti startForeground con tipo microfono lancia SecurityException).
     val micPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            CallRecordingService.start(context, null)
-            recording = true
-        }
-    }
-    fun toggleRecording() {
-        if (recording) {
-            CallRecordingService.stop(context)
-            recording = false
-        } else if (
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+    ) { granted -> if (granted) CallRecordingService.start(context, null) }
+
+    fun startWithPermission() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
         ) {
             CallRecordingService.start(context, null)
-            recording = true
         } else {
             micPermission.launch(Manifest.permission.RECORD_AUDIO)
         }
+    }
+    fun toggleRecording() {
+        if (recording) CallRecordingService.stop(context) else startWithPermission()
     }
 
     Scaffold(
@@ -107,12 +106,8 @@ fun ConsoleScreen(
                     }
                     IconButton(onClick = {
                         scope.launch {
-                            EvidenceShare.share(
-                                context = context,
-                                esposto = vm.buildComplaintText(),
-                                evidenceJson = vm.buildEvidenceJson(),
-                                audioPaths = vm.recordings.value.map { it.filePath },
-                            )
+                            val uris = vm.buildShareUris(context) // snapshot unico, su IO
+                            EvidenceShare.launchChooser(context, uris)
                         }
                     }) {
                         Icon(Icons.Filled.Share, contentDescription = "Condividi fascicolo")
@@ -149,6 +144,30 @@ fun ConsoleScreen(
                 items(calls) { CallRow(it) }
             }
         }
+    }
+
+    // Conferma in-app per l'avvio della registrazione dalla notifica. Richiesta esplicita
+    // all'utente: MainActivity è esportata, quindi non avviamo mai la registrazione solo
+    // perché qualcuno ha lanciato l'app con l'extra.
+    if (pendingRecordNumber != null) {
+        AlertDialog(
+            onDismissRequest = onPendingRecordConsumed,
+            title = { Text("Avviare la registrazione?") },
+            text = {
+                Text(
+                    "Chiamata da $pendingRecordNumber. Attiva il vivavoce e conferma per " +
+                        "registrare. La registrazione di una chiamata a cui partecipi è lecita.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { startWithPermission(); onPendingRecordConsumed() }) {
+                    Text("Registra")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onPendingRecordConsumed) { Text("Annulla") }
+            },
+        )
     }
 }
 

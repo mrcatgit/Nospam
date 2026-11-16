@@ -1,53 +1,77 @@
 package com.nospam.data.db
 
 import androidx.room.Room
-import androidx.room.testing.MigrationTestHelper
+import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.sqlite.db.SupportSQLiteOpenHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.After
 import org.junit.Assert.assertTrue
-import org.junit.Rule
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Valida le migrazioni dello schema Room contro gli schemi esportati in app/schemas.
+ * Valida la catena di migrazioni v1 → v2 → v3.
+ *
+ * Crea un database alla v1 con lo schema originale (SQL grezzo), poi lo apre con Room
+ * applicando MIGRATION_1_2 e MIGRATION_2_3: Room esegue le migrazioni e **rivalida lo
+ * schema finale** contro quello atteso (v3), lanciando se una migrazione è errata. Questo
+ * approccio non dipende dagli schemi storici esportati (KSP esporta solo il corrente).
+ *
  * Test strumentato: richiede un device/emulatore (gira in CI).
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
 
     private val dbName = "migration-test.db"
+    private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
-    @get:Rule
-    val helper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation(),
-        NoSpamDatabase::class.java,
-        emptyList(),
-        FrameworkSQLiteOpenHelperFactory(),
-    )
+    @Before @After fun cleanUp() {
+        context.deleteDatabase(dbName)
+    }
 
-    @Test
-    fun migrate1To2To3() {
-        // Crea il DB alla v1 e chiudilo.
-        helper.createDatabase(dbName, 1).close()
-
-        // Applica e valida ogni migrazione contro lo schema esportato.
-        helper.runMigrationsAndValidate(dbName, 2, true, NoSpamDatabase.MIGRATION_1_2)
-        helper.runMigrationsAndValidate(dbName, 3, true, NoSpamDatabase.MIGRATION_2_3)
+    /** Crea il database alla versione 1 con lo schema originale (CallRecord + BlockRule). */
+    private fun createV1Database() {
+        val callback = object : SupportSQLiteOpenHelper.Callback(1) {
+            override fun onCreate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `call_records` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`rawNumber` TEXT NOT NULL, `e164Number` TEXT, `regionOrCarrier` TEXT, " +
+                        "`timestamp` INTEGER NOT NULL, `verdict` TEXT NOT NULL, " +
+                        "`category` TEXT NOT NULL, `riskScore` INTEGER NOT NULL, " +
+                        "`reasons` TEXT NOT NULL, `knownContact` INTEGER NOT NULL, " +
+                        "`userNote` TEXT, `prevHash` TEXT NOT NULL, `hash` TEXT NOT NULL)"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `block_rules` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`type` TEXT NOT NULL, `value` TEXT NOT NULL, `action` TEXT NOT NULL, " +
+                        "`category` TEXT NOT NULL, `priority` INTEGER NOT NULL, " +
+                        "`enabled` INTEGER NOT NULL, `source` TEXT NOT NULL, " +
+                        "`createdAt` INTEGER NOT NULL)"
+                )
+            }
+            override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+        }
+        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name(dbName)
+            .callback(callback)
+            .build()
+        val helper = FrameworkSQLiteOpenHelperFactory().create(config)
+        helper.writableDatabase.close() // forza onCreate (crea lo schema v1, user_version=1)
+        helper.close()
     }
 
     @Test
-    fun migratedDbOpensWithRoom() {
-        helper.createDatabase(dbName, 1).close()
-        val db = Room.databaseBuilder(
-            InstrumentationRegistry.getInstrumentation().targetContext,
-            NoSpamDatabase::class.java,
-            dbName,
-        )
+    fun migratesV1ToV3AndRoomValidatesSchema() {
+        createV1Database()
+        val db = Room.databaseBuilder(context, NoSpamDatabase::class.java, dbName)
             .addMigrations(NoSpamDatabase.MIGRATION_1_2, NoSpamDatabase.MIGRATION_2_3)
             .build()
-        // Forza l'apertura: Room rivalida lo schema finale.
+        // Aprire esegue le migrazioni e fa rivalidare a Room lo schema finale (v3).
         assertTrue(db.openHelper.writableDatabase.isOpen)
         db.close()
     }

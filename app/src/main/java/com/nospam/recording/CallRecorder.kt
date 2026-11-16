@@ -3,22 +3,27 @@ package com.nospam.recording
 import android.content.Context
 import android.media.MediaRecorder
 import android.os.Build
-import com.nospam.forensic.FileHasher
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 /**
  * Registratore audio basato su microfono.
  *
  * ⚠️ Perché il microfono e non il "flusso chiamata": da Android 10 le app di terze
  * parti non possono accedere all'audio della telefonata (AudioSource.VOICE_CALL è
- * riservato alle app di sistema). Captiamo quindi acusticamente dal microfono: con il
- * VIVAVOCE attivo si registrano entrambe le voci. È legale (l'utente è parte della
+ * riservato alle app di sistema). Captiamo acusticamente dal microfono: con il VIVAVOCE
+ * attivo si possono registrare entrambe le voci. È legale (l'utente è parte della
  * conversazione) e non intercetta comunicazioni di terzi.
  *
- * Produce un file AAC/M4A nello storage privato e ne calcola lo SHA-256 alla chiusura.
+ * ⚠️ Limite: durante una chiamata cellulare, le restrizioni Android sull'input audio
+ * condiviso possono far sì che un'app ordinaria riceva silenzio o non avvii. La riuscita
+ * dipende dal dispositivo: verifica sul tuo telefono.
+ *
+ * Produce un file AAC/M4A nello storage privato. L'hash SHA-256 viene calcolato altrove
+ * (fuori dal thread principale), non qui.
  */
 class CallRecorder(private val context: Context) {
 
@@ -28,14 +33,18 @@ class CallRecorder(private val context: Context) {
 
     val isRecording: Boolean get() = recorder != null
 
-    data class Result(val file: File, val sha256: String, val startedAt: Long, val durationMs: Long)
+    /** File prodotto dallo stop, senza hash (calcolato dal chiamante su Dispatchers.IO). */
+    data class Stopped(val file: File, val startedAt: Long, val durationMs: Long)
 
     private fun outputDir(): File =
         File(context.filesDir, "recordings").apply { if (!exists()) mkdirs() }
 
     fun start(): Boolean {
         if (isRecording) return false
-        val name = "rec_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ITALY).format(Date()) + ".m4a"
+        // Nome univoco: timestamp + suffisso casuale, così due avvii nello stesso secondo
+        // (o un cambio d'ora) non riusano mai lo stesso percorso sovrascrivendo una prova.
+        val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ITALY).format(Date())
+        val name = "rec_${stamp}_${UUID.randomUUID().toString().take(8)}.m4a"
         val file = File(outputDir(), name)
 
         val rec = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
@@ -64,16 +73,18 @@ class CallRecorder(private val context: Context) {
         }
     }
 
-    /** Ferma la registrazione e restituisce il file sigillato, o null in caso di errore. */
-    fun stop(): Result? {
+    /**
+     * Ferma la registrazione e restituisce il file (senza hash), o null in caso di errore.
+     * L'hashing dell'intero file è lasciato al chiamante, da eseguire su Dispatchers.IO.
+     */
+    fun stop(): Stopped? {
         val rec = recorder ?: return null
         val file = currentFile ?: return null
         return try {
             rec.stop()
             rec.release()
             val duration = System.currentTimeMillis() - startedAt
-            val hash = FileHasher.sha256(file)
-            Result(file, hash, startedAt, duration)
+            Stopped(file, startedAt, duration)
         } catch (e: Exception) {
             // stop() può fallire se la registrazione è troppo breve: scarta il file.
             runCatching { rec.release() }

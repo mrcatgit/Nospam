@@ -6,30 +6,36 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.nospam.report.ComplaintPdfGenerator
 import java.io.File
+import java.util.UUID
 
 /**
- * Prepara e condivide il fascicolo probatorio verso un'app a scelta dell'utente
- * (email, messaggistica, salvataggio su file) tramite il selettore di sistema.
+ * Prepara e condivide il fascicolo probatorio (esposto .txt + PDF, bundle JSON firmato,
+ * file audio) tramite il selettore di sistema, usando FileProvider.
  *
- * Mette insieme:
- *   - esposto in italiano (.txt);
- *   - evidence bundle firmato (.json);
- *   - i file audio sigillati delle registrazioni.
- *
- * Usa FileProvider: nessun file privato viene esposto se non tramite URI temporanei
- * con permesso di sola lettura concesso all'app ricevente.
+ * Ogni export viene scritto in una cartella UNICA: così un URI già concesso in una
+ * condivisione precedente continua a puntare al suo contenuto originale e non viene
+ * sovrascritto da un export successivo.
  */
 object EvidenceShare {
 
     private const val AUTHORITY = "com.nospam.fileprovider"
 
-    fun share(
+    /**
+     * Scrive i file del fascicolo in una cartella unica e restituisce gli URI da
+     * condividere. Operazione di I/O (scrive file e rende il PDF): chiamare su
+     * Dispatchers.IO, non sul thread principale.
+     */
+    fun buildShareUris(
         context: Context,
         esposto: String,
         evidenceJson: String,
         audioPaths: List<String>,
-    ) {
-        val dir = File(context.cacheDir, "export").apply { if (!exists()) mkdirs() }
+    ): ArrayList<Uri> {
+        val dir = File(
+            context.cacheDir,
+            "export/${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(8)}",
+        ).apply { mkdirs() }
+
         val txt = File(dir, "esposto_nospam.txt").apply { writeText(esposto) }
         val json = File(dir, "evidence_bundle.json").apply { writeText(evidenceJson) }
         val pdf = runCatching { ComplaintPdfGenerator().render(esposto, dir) }.getOrNull()
@@ -42,7 +48,12 @@ object EvidenceShare {
             val f = File(path)
             if (f.exists()) uris += FileProvider.getUriForFile(context, AUTHORITY, f)
         }
+        return uris
+    }
 
+    /** Avvia il selettore di condivisione. Solo UI: chiamare sul thread principale. */
+    fun launchChooser(context: Context, uris: ArrayList<Uri>) {
+        if (uris.isEmpty()) return
         val send = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
             type = "*/*"
             putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)

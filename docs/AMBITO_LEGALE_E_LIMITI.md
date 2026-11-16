@@ -43,8 +43,10 @@ un limite tecnico importante e trasparente:
 
 - Da **Android 10** le app di terze parti **non possono** accedere al flusso audio della
   telefonata (`AudioSource.VOICE_CALL` è riservato alle app di sistema).
-- NoSpam quindi registra **dal microfono**: con il **vivavoce** attivo cattura
-  acusticamente entrambe le voci. La qualità dipende dal vivavoce e dall'ambiente.
+- NoSpam quindi registra **dal microfono**: con il **vivavoce** attivo può catturare
+  acusticamente entrambe le voci. La riuscita e la qualità dipendono dal dispositivo e
+  dall'ambiente; su alcuni telefoni, per le restrizioni Android, la registrazione può
+  risultare silenziosa. Verifica sempre sul tuo dispositivo (vedi `REGISTRAZIONE.md`).
 - La registrazione è **sempre avviata e fermata manualmente dall'utente**, con una
   notifica persistente visibile per tutta la durata. Nessun avvio automatico o nascosto.
 - Ogni file audio è **sigillato con SHA-256** e incluso nel fascicolo prove.

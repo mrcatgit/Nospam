@@ -7,9 +7,6 @@ import com.nospam.data.model.CallRecord
 import com.nospam.data.model.Verdict
 import com.nospam.detection.ContactLookup
 import com.nospam.forensic.EvidenceHasher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
@@ -27,13 +24,13 @@ import kotlinx.coroutines.launch
  */
 class NoSpamScreeningService : CallScreeningService() {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     override fun onScreenCall(callDetails: Call.Details) {
         val raw = callDetails.handle?.schemeSpecificPart
         val app = applicationContext as NoSpamApp
 
-        scope.launch {
+        // Persistiamo sullo scope a vita-applicazione: Telecom può slegare e distruggere
+        // il service subito dopo respondToCall(), ma l'inserimento forense deve completare.
+        app.appScope.launch {
             // Consulta la rubrica (se READ_CONTACTS è concesso): un contatto noto non
             // deve essere bloccato/silenziato. Senza permesso, isKnown restituisce false.
             val knownContact = ContactLookup.isKnown(applicationContext, raw)
@@ -84,10 +81,5 @@ class NoSpamScreeningService : CallScreeningService() {
                 )
             )
         }
-    }
-
-    override fun onDestroy() {
-        scope.cancel()
-        super.onDestroy()
     }
 }

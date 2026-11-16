@@ -14,8 +14,8 @@ import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableStateOf
 import com.nospam.NoSpamApp
-import com.nospam.recording.CallRecordingService
 
 /**
  * Entry point. Richiede il ruolo di sistema "app ID chiamante & spam"
@@ -34,41 +34,43 @@ class MainActivity : ComponentActivity() {
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { /* esito */ }
 
+    // Numero per cui la notifica propone di registrare: la console mostrerà una conferma.
+    private val pendingRecordNumber = mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestCallScreeningRole()
         requestRuntimePermissions()
         setContent {
             MaterialTheme {
-                Surface { NavRoot(vm) }
+                Surface {
+                    NavRoot(
+                        vm,
+                        pendingRecordNumber = pendingRecordNumber.value,
+                        onPendingRecordConsumed = { pendingRecordNumber.value = null },
+                    )
+                }
             }
         }
-        maybeStartRecording(intent)
+        flagPendingRecording(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        maybeStartRecording(intent)
+        flagPendingRecording(intent)
     }
 
     /**
-     * Avvia la registrazione quando l'app è aperta dall'azione "Registra" della notifica.
-     * L'avvio avviene qui, con l'Activity in primo piano, così il foreground service di
-     * tipo microfono è consentito anche su Android 14. Richiede il permesso microfono.
+     * Quando l'app è aperta dall'azione "Registra" della notifica, NON avvia da sola la
+     * registrazione: segna il numero in sospeso, così la console chiede conferma esplicita
+     * all'utente. MainActivity è esportata, quindi un avvio automatico da un extra sarebbe
+     * attivabile da altre app: lo evitiamo richiedendo la conferma in-app.
      */
-    private fun maybeStartRecording(intent: Intent?) {
+    private fun flagPendingRecording(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_START_RECORDING, false) != true) return
         intent.removeExtra(EXTRA_START_RECORDING)
-        val number = intent.getStringExtra(EXTRA_NUMBER)
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            CallRecordingService.start(this, number)
-        } else {
-            // Senza permesso non si può registrare: chiedilo (l'utente potrà riprovare).
-            permissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
-        }
+        pendingRecordNumber.value = intent.getStringExtra(EXTRA_NUMBER) ?: "numero sconosciuto"
     }
 
     private fun requestCallScreeningRole() {
